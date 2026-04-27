@@ -62,6 +62,8 @@ export interface Ingredient {
 }
 
 // Recipe Types
+export type MealType = 'brunch' | 'dinner'
+
 export interface RecipeIngredient {
   id: string
   recipe_id: string
@@ -77,6 +79,9 @@ export interface Recipe {
   name: string
   description: string | null
   notes: string | null
+  meal_type: MealType
+  suitable_for_vegetarian?: boolean
+  suitable_for_vegan?: boolean
   created_at: string
   updated_at: string
   recipe_ingredients?: RecipeIngredient[]

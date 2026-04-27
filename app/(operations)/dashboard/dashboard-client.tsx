@@ -16,7 +16,9 @@ import {
   UserPlus,
   UserMinus,
   UserCheck,
-  ChefHat
+  ChefHat,
+  Sun,
+  Moon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -214,34 +216,69 @@ export function DashboardClient({
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <div className="pt-2 pb-1 border-t">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Today&apos;s Menu</p>
-                        {recipes.length > 0 ? (
-                          <div className="space-y-2">
-                            {recipes.slice(0, 4).map((recipe) => (
-                              <div key={recipe.id} className="flex items-center gap-2 text-sm">
-                                <ChefHat className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span>{recipe.name}</span>
-                                {recipe.suitable_for_vegan && (
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
-                                    V
-                                  </Badge>
-                                )}
-                                {recipe.suitable_for_vegetarian && !recipe.suitable_for_vegan && (
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 text-yellow-700 border-yellow-200">
-                                    VG
-                                  </Badge>
-                                )}
-                              </div>
-                            ))}
-                            {recipes.length > 4 && (
-                              <Link href="/recipes" className="text-xs text-primary hover:underline">
-                                +{recipes.length - 4} more recipes
-                              </Link>
-                            )}
+                      <div className="pt-2 pb-1 border-t space-y-4">
+                        {/* Brunch Section */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Sun className="h-4 w-4 text-amber-500" />
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Brunch</p>
                           </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No recipes planned yet</p>
+                          {recipes.filter(r => r.meal_type === 'brunch').length > 0 ? (
+                            <div className="space-y-1.5 pl-6">
+                              {recipes.filter(r => r.meal_type === 'brunch').map((recipe) => (
+                                <div key={recipe.id} className="flex items-center gap-2 text-sm">
+                                  <ChefHat className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <span>{recipe.name}</span>
+                                  {recipe.suitable_for_vegan && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
+                                      V
+                                    </Badge>
+                                  )}
+                                  {recipe.suitable_for_vegetarian && !recipe.suitable_for_vegan && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 text-yellow-700 border-yellow-200">
+                                      VG
+                                    </Badge>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground pl-6">No brunch recipes yet</p>
+                          )}
+                        </div>
+
+                        {/* Dinner Section */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Moon className="h-4 w-4 text-indigo-500" />
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dinner</p>
+                          </div>
+                          {recipes.filter(r => r.meal_type === 'dinner').length > 0 ? (
+                            <div className="space-y-1.5 pl-6">
+                              {recipes.filter(r => r.meal_type === 'dinner').map((recipe) => (
+                                <div key={recipe.id} className="flex items-center gap-2 text-sm">
+                                  <ChefHat className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <span>{recipe.name}</span>
+                                  {recipe.suitable_for_vegan && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
+                                      V
+                                    </Badge>
+                                  )}
+                                  {recipe.suitable_for_vegetarian && !recipe.suitable_for_vegan && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 text-yellow-700 border-yellow-200">
+                                      VG
+                                    </Badge>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground pl-6">No dinner recipes yet</p>
+                          )}
+                        </div>
+
+                        {recipes.length === 0 && (
+                          <p className="text-sm text-muted-foreground">No recipes available yet</p>
                         )}
                       </div>
                     </AccordionContent>
