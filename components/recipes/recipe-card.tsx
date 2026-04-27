@@ -3,8 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { Recipe, Ingredient } from '@/lib/types'
-import { ingredients as allIngredients } from '@/lib/data'
+import type { Recipe } from '@/lib/types'
 import { ChefHat, Eye, Edit } from 'lucide-react'
 
 interface RecipeCardProps {
@@ -14,13 +13,14 @@ interface RecipeCardProps {
 }
 
 export function RecipeCard({ recipe, onView, onEdit }: RecipeCardProps) {
+  const recipeIngredients = recipe.recipe_ingredients || []
+  
   // Get first 4 ingredients for preview
-  const previewIngredients = recipe.ingredients.slice(0, 4).map(ri => {
-    const ingredient = allIngredients.find(i => i.id === ri.ingredientId)
-    return ingredient?.name || 'Unknown'
+  const previewIngredients = recipeIngredients.slice(0, 4).map(ri => {
+    return ri.ingredient?.name || 'Unknown'
   })
 
-  const remainingCount = recipe.ingredients.length - previewIngredients.length
+  const remainingCount = recipeIngredients.length - previewIngredients.length
 
   return (
     <Card className="border-border bg-card transition-shadow hover:shadow-md">
@@ -41,7 +41,7 @@ export function RecipeCard({ recipe, onView, onEdit }: RecipeCardProps) {
         {/* Ingredient Count */}
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-muted/50 text-muted-foreground">
-            {recipe.ingredients.length} ingredients
+            {recipeIngredients.length} ingredients
           </Badge>
         </div>
 

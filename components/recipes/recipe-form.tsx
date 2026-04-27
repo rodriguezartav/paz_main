@@ -7,25 +7,32 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { RecipeIngredientRow } from './recipe-ingredient-row'
-import type { Recipe, RecipeIngredient, Ingredient, Measurement } from '@/lib/types'
-import { ingredients as allIngredients } from '@/lib/data'
+import type { Recipe, Ingredient, Measurement } from '@/lib/types'
 import { Plus } from 'lucide-react'
 
 interface RecipeFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   recipe?: Recipe | null
-  onSave: (recipe: Omit<Recipe, 'id'> & { id?: string }) => void
+  ingredients: Ingredient[]
+  onSave: (recipe: { 
+    name: string
+    description: string | null
+    notes: string | null
+    id?: string
+    recipe_ingredients: { ingredient_id: string; amount: number; measurement: string }[]
+  }) => void
+  isLoading?: boolean
 }
 
 interface RecipeIngredientInput {
   tempId: string
-  ingredientId: string
+  ingredient_id: string
   amount: number
   measurement: Measurement
 }
 
-export function RecipeForm({ open, onOpenChange, recipe, onSave }: RecipeFormProps) {
+export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, isLoading }: RecipeFormProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [notes, setNotes] = useState('')
@@ -36,12 +43,12 @@ export function RecipeForm({ open, onOpenChange, recipe, onSave }: RecipeFormPro
   useEffect(() => {
     if (recipe) {
       setName(recipe.name)
-      setDescription(recipe.description)
-      setNotes(recipe.notes)
+      setDescription(recipe.description || '')
+      setNotes(recipe.notes || '')
       setRecipeIngredients(
-        recipe.ingredients.map(ri => ({
+        (recipe.recipe_ingredients || []).map(ri => ({
           tempId: ri.id,
-          ingredientId: ri.ingredientId,
+          ingredient_id: ri.ingredient_id,
           amount: ri.amount,
           measurement: ri.measurement
         }))
@@ -59,7 +66,7 @@ export function RecipeForm({ open, onOpenChange, recipe, onSave }: RecipeFormPro
       ...prev,
       {
         tempId: String(Date.now()),
-        ingredientId: '',
+        ingredient_id: '',
         amount: 1,
         measurement: 'kg' as Measurement
       }
@@ -79,12 +86,10 @@ export function RecipeForm({ open, onOpenChange, recipe, onSave }: RecipeFormPro
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    const ingredients: RecipeIngredient[] = recipeIngredients
-      .filter(ri => ri.ingredientId)
-      .map((ri, index) => ({
-        id: ri.tempId || `new-${index}`,
-        recipeId: recipe?.id || '',
-        ingredientId: ri.ingredientId,
+    const ingredientData = recipeIngredients
+      .filter(ri => ri.ingredient_id)
+      .map(ri => ({
+        ingredient_id: ri.ingredient_id,
         amount: ri.amount,
         measurement: ri.measurement
       }))
@@ -92,11 +97,10 @@ export function RecipeForm({ open, onOpenChange, recipe, onSave }: RecipeFormPro
     onSave({
       id: recipe?.id,
       name,
-      description,
-      notes,
-      ingredients
+      description: description || null,
+      notes: notes || null,
+      recipe_ingredients: ingredientData
     })
-    onOpenChange(false)
   }
 
   return (
@@ -159,12 +163,12 @@ export function RecipeForm({ open, onOpenChange, recipe, onSave }: RecipeFormPro
                 {recipeIngredients.map((ri) => (
                   <RecipeIngredientRow
                     key={ri.tempId}
-                    ingredients={allIngredients}
-                    selectedIngredientId={ri.ingredientId}
+                    ingredients={ingredients}
+                    selectedIngredientId={ri.ingredient_id}
                     amount={ri.amount}
                     measurement={ri.measurement}
                     onIngredientChange={(ingredientId) => 
-                      handleUpdateIngredient(ri.tempId, { ingredientId })
+                      handleUpdateIngredient(ri.tempId, { ingredient_id: ingredientId })
                     }
                     onAmountChange={(amount) => 
                       handleUpdateIngredient(ri.tempId, { amount })
@@ -180,11 +184,11 @@ export function RecipeForm({ open, onOpenChange, recipe, onSave }: RecipeFormPro
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit">
-              {isEditing ? 'Save Changes' : 'Add Recipe'}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Recipe'}
             </Button>
           </DialogFooter>
         </form>

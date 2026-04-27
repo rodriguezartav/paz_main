@@ -2,13 +2,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { DietBadge } from './diet-badge'
 import { StatusBadge } from './status-badge'
 import { PaymentStatusBadge } from './payment-status-badge'
 import { BalanceDueBadge } from './balance-due-badge'
 import type { Resident, Payment } from '@/lib/types'
-import { calculateNights } from '@/lib/data'
+import { calculateNights } from '@/lib/db/queries'
 import { 
   User, Mail, Phone, AlertTriangle, 
   Calendar, MapPin, FileText, 
@@ -18,7 +17,7 @@ import {
 
 interface ResidentDetailsPanelProps {
   resident: Resident
-  payment?: Payment
+  payment?: Payment | null
 }
 
 function formatDate(dateString: string): string {
@@ -35,7 +34,7 @@ function formatCurrency(amount: number, currency: string): string {
 }
 
 export function ResidentDetailsPanel({ resident, payment }: ResidentDetailsPanelProps) {
-  const nights = calculateNights(resident.arrivalDate, resident.departureDate)
+  const nights = calculateNights(resident.arrival_date, resident.departure_date)
 
   return (
     <div className="space-y-6">
@@ -92,7 +91,7 @@ export function ResidentDetailsPanel({ resident, payment }: ResidentDetailsPanel
                 <AlertTriangle className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Emergency Contact</p>
-                  <p className="text-card-foreground">{resident.emergencyContact || '-'}</p>
+                  <p className="text-card-foreground">{resident.emergency_contact || '-'}</p>
                 </div>
               </div>
             </div>
@@ -114,14 +113,14 @@ export function ResidentDetailsPanel({ resident, payment }: ResidentDetailsPanel
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Arrival</p>
-                  <p className="text-card-foreground">{formatDate(resident.arrivalDate)}</p>
+                  <p className="text-card-foreground">{formatDate(resident.arrival_date)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Departure</p>
-                  <p className="text-card-foreground">{formatDate(resident.departureDate)}</p>
+                  <p className="text-card-foreground">{formatDate(resident.departure_date)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -157,11 +156,11 @@ export function ResidentDetailsPanel({ resident, payment }: ResidentDetailsPanel
             <CardTitle className="text-lg">Check-In</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <CheckItem label="Check-in completed" checked={resident.checkInCompleted} />
-            <CheckItem label="Release accepted" checked={resident.releaseAccepted} />
-            <CheckItem label="Health insurance confirmed" checked={resident.healthInsuranceConfirmed} />
-            <CheckItem label="Media release accepted" checked={resident.mediaReleaseAccepted} />
-            <CheckItem label="Orientation completed" checked={resident.orientationCompleted} />
+            <CheckItem label="Check-in completed" checked={resident.check_in_completed} />
+            <CheckItem label="Release accepted" checked={resident.release_accepted} />
+            <CheckItem label="Health insurance confirmed" checked={resident.health_insurance_confirmed} />
+            <CheckItem label="Media release accepted" checked={resident.media_release_accepted} />
+            <CheckItem label="Orientation completed" checked={resident.orientation_completed} />
           </CardContent>
         </Card>
 
@@ -176,24 +175,24 @@ export function ResidentDetailsPanel({ resident, payment }: ResidentDetailsPanel
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-lg font-semibold text-card-foreground">{formatCurrency(payment.totalAmount, payment.currency)}</p>
+                  <p className="text-lg font-semibold text-card-foreground">{formatCurrency(payment.total_amount, payment.currency)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Price per Night</p>
-                  <p className="text-card-foreground">{formatCurrency(payment.pricePerNight, payment.currency)}</p>
+                  <p className="text-card-foreground">{formatCurrency(payment.price_per_night, payment.currency)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Deposit</p>
-                  <p className="text-card-foreground">{formatCurrency(payment.depositAmount, payment.currency)}</p>
+                  <p className="text-card-foreground">{formatCurrency(payment.deposit_amount, payment.currency)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Amount Paid</p>
-                  <p className="text-card-foreground">{formatCurrency(payment.amountPaid, payment.currency)}</p>
+                  <p className="text-card-foreground">{formatCurrency(payment.amount_paid, payment.currency)}</p>
                 </div>
               </div>
               <div className="rounded-lg bg-muted/50 p-4">
                 <p className="mb-2 text-sm text-muted-foreground">Balance Due</p>
-                <BalanceDueBadge balanceDue={payment.balanceDue} currency={payment.currency} />
+                <BalanceDueBadge balanceDue={payment.balance_due} currency={payment.currency} />
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CreditCard className="h-4 w-4" />
@@ -251,7 +250,8 @@ function CheckItem({ label, checked }: { label: string; checked: boolean }) {
   )
 }
 
-function formatPaymentMethod(method: string): string {
+function formatPaymentMethod(method: string | null): string {
+  if (!method) return '-'
   const methods: Record<string, string> = {
     cash: 'Cash',
     sinpe: 'SINPE',

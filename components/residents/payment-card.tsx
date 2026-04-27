@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { PaymentStatusBadge } from './payment-status-badge'
 import { BalanceDueBadge } from './balance-due-badge'
 import type { Resident, Payment } from '@/lib/types'
-import { calculateNights } from '@/lib/data'
+import { calculateNights } from '@/lib/db/queries'
 import { Calendar, CreditCard, Upload, CheckCircle, FileText } from 'lucide-react'
 
 interface PaymentCardProps {
@@ -13,7 +13,7 @@ interface PaymentCardProps {
   payment: Payment
 }
 
-function formatDate(dateString: string): string {
+function formatDate(dateString: string | null): string {
   if (!dateString) return '-'
   const date = new Date(dateString)
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -26,7 +26,8 @@ function formatCurrency(amount: number, currency: string): string {
   return `$${amount.toLocaleString()}`
 }
 
-function formatPaymentMethod(method: string): string {
+function formatPaymentMethod(method: string | null): string {
+  if (!method) return '-'
   const methods: Record<string, string> = {
     cash: 'Cash',
     sinpe: 'SINPE',
@@ -39,7 +40,7 @@ function formatPaymentMethod(method: string): string {
 }
 
 export function PaymentCard({ resident, payment }: PaymentCardProps) {
-  const nights = calculateNights(resident.arrivalDate, resident.departureDate)
+  const nights = calculateNights(resident.arrival_date, resident.departure_date)
 
   return (
     <Card className="border-border bg-card">
@@ -49,7 +50,7 @@ export function PaymentCard({ resident, payment }: PaymentCardProps) {
             <CardTitle className="text-lg text-card-foreground">{resident.name}</CardTitle>
             <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
-              <span>{formatDate(resident.arrivalDate)} - {formatDate(resident.departureDate)}</span>
+              <span>{formatDate(resident.arrival_date)} - {formatDate(resident.departure_date)}</span>
               <span>({nights} nights)</span>
             </div>
           </div>
@@ -61,19 +62,19 @@ export function PaymentCard({ resident, payment }: PaymentCardProps) {
         <div className="grid gap-3 text-sm sm:grid-cols-2">
           <div className="flex justify-between sm:flex-col">
             <span className="text-muted-foreground">Price per Night</span>
-            <span className="font-medium text-card-foreground">{formatCurrency(payment.pricePerNight, payment.currency)}</span>
+            <span className="font-medium text-card-foreground">{formatCurrency(payment.price_per_night, payment.currency)}</span>
           </div>
           <div className="flex justify-between sm:flex-col">
             <span className="text-muted-foreground">Total Amount</span>
-            <span className="font-medium text-card-foreground">{formatCurrency(payment.totalAmount, payment.currency)}</span>
+            <span className="font-medium text-card-foreground">{formatCurrency(payment.total_amount, payment.currency)}</span>
           </div>
           <div className="flex justify-between sm:flex-col">
             <span className="text-muted-foreground">Deposit</span>
-            <span className="text-card-foreground">{formatCurrency(payment.depositAmount, payment.currency)}</span>
+            <span className="text-card-foreground">{formatCurrency(payment.deposit_amount, payment.currency)}</span>
           </div>
           <div className="flex justify-between sm:flex-col">
             <span className="text-muted-foreground">Amount Paid</span>
-            <span className="text-card-foreground">{formatCurrency(payment.amountPaid, payment.currency)}</span>
+            <span className="text-card-foreground">{formatCurrency(payment.amount_paid, payment.currency)}</span>
           </div>
         </div>
 
@@ -82,10 +83,10 @@ export function PaymentCard({ resident, payment }: PaymentCardProps) {
           <div className="mb-2 flex items-center justify-between">
             <span className="text-sm font-medium text-muted-foreground">Balance Due</span>
             <span className="text-lg font-semibold text-card-foreground">
-              {formatCurrency(payment.balanceDue, payment.currency)}
+              {formatCurrency(payment.balance_due, payment.currency)}
             </span>
           </div>
-          <BalanceDueBadge balanceDue={payment.balanceDue} currency={payment.currency} />
+          <BalanceDueBadge balanceDue={payment.balance_due} currency={payment.currency} />
         </div>
 
         {/* Payment Method */}

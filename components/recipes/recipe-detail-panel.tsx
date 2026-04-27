@@ -3,7 +3,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import type { Recipe } from '@/lib/types'
-import { ingredients as allIngredients } from '@/lib/data'
 import { ChefHat, FileText, ListChecks } from 'lucide-react'
 
 interface RecipeDetailPanelProps {
@@ -14,6 +13,8 @@ interface RecipeDetailPanelProps {
 
 export function RecipeDetailPanel({ recipe, open, onOpenChange }: RecipeDetailPanelProps) {
   if (!recipe) return null
+
+  const recipeIngredients = recipe.recipe_ingredients || []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -35,12 +36,12 @@ export function RecipeDetailPanel({ recipe, open, onOpenChange }: RecipeDetailPa
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
               <ListChecks className="h-4 w-4 text-muted-foreground" />
-              <span>Ingredients ({recipe.ingredients.length})</span>
+              <span>Ingredients ({recipeIngredients.length})</span>
             </div>
             <div className="rounded-lg bg-muted/50 p-4">
               <ul className="space-y-2">
-                {recipe.ingredients.map((ri) => {
-                  const ingredient = allIngredients.find(i => i.id === ri.ingredientId)
+                {recipeIngredients.map((ri) => {
+                  const ingredient = ri.ingredient
                   if (!ingredient) return null
                   
                   return (
