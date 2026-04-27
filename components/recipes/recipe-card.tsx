@@ -1,10 +1,11 @@
 'use client'
 
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Recipe } from '@/lib/types'
-import { ChefHat, Eye, Edit } from 'lucide-react'
+import { ChefHat, Eye, Edit, Settings2 } from 'lucide-react'
 
 interface RecipeCardProps {
   recipe: Recipe
@@ -63,25 +64,37 @@ export function RecipeCard({ recipe, onView, onEdit }: RecipeCardProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1"
-            onClick={() => onView?.(recipe)}
-          >
-            <Eye className="mr-1.5 h-4 w-4" />
-            View
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1"
-            onClick={() => onEdit?.(recipe)}
-          >
-            <Edit className="mr-1.5 h-4 w-4" />
-            Edit
-          </Button>
+        <div className="flex flex-col gap-2">
+          <Link href={`/recipes/${recipe.id}/manage`} className="w-full">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="w-full"
+            >
+              <Settings2 className="mr-1.5 h-4 w-4" />
+              Recipe Manager
+            </Button>
+          </Link>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={() => onView?.(recipe)}
+            >
+              <Eye className="mr-1.5 h-4 w-4" />
+              View
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={() => onEdit?.(recipe)}
+            >
+              <Edit className="mr-1.5 h-4 w-4" />
+              Edit
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
