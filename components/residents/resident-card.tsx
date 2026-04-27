@@ -17,8 +17,8 @@ interface ResidentCardProps {
 }
 
 function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const date = new Date(dateString + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
 export function ResidentCard({ resident, payment }: ResidentCardProps) {

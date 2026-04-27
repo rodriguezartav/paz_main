@@ -8,14 +8,16 @@ export function calculateNights(arrivalDate: string, departureDate: string): num
 
 export function formatDate(dateString: string | null): string {
   if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  // Add time component to avoid timezone issues with date-only strings
+  const date = new Date(dateString + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
 export function formatDateLong(dateString: string): string {
   if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  // Add time component to avoid timezone issues with date-only strings
+  const date = new Date(dateString + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
 export function formatCurrency(amount: number, currency: string): string {

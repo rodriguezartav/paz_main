@@ -7,7 +7,7 @@ import { StatusBadge } from './status-badge'
 import { PaymentStatusBadge } from './payment-status-badge'
 import { BalanceDueBadge } from './balance-due-badge'
 import type { Resident, Payment } from '@/lib/types'
-import { calculateNights } from '@/lib/db/queries'
+import { calculateNights } from '@/lib/utils/date'
 import { 
   User, Mail, Phone, AlertTriangle, 
   Calendar, MapPin, FileText, 

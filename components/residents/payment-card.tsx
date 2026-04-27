@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { PaymentStatusBadge } from './payment-status-badge'
 import { BalanceDueBadge } from './balance-due-badge'
 import type { Resident, Payment } from '@/lib/types'
-import { calculateNights } from '@/lib/db/queries'
+import { calculateNights } from '@/lib/utils/date'
 import { Calendar, CreditCard, Upload, CheckCircle, FileText } from 'lucide-react'
 
 interface PaymentCardProps {
