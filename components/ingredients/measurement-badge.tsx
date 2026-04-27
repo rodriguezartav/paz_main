@@ -4,8 +4,10 @@ import { cn } from '@/lib/utils'
 
 const measurementConfig: Record<Measurement, { label: string }> = {
   kg: { label: 'kg' },
-  unit: { label: 'unit' },
+  g: { label: 'g' },
+  l: { label: 'l' },
   ml: { label: 'ml' },
+  unit: { label: 'unit' },
   tbsp: { label: 'tbsp' }
 }
 
