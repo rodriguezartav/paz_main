@@ -301,6 +301,79 @@ export function calculateNights(arrivalDate: string, departureDate: string): num
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 }
 
+// Dashboard queries
+export async function getDashboardResidents(startDate: string, endDate: string): Promise<Resident[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('residents')
+    .select('*')
+    .or(`arrival_date.lte.${endDate},departure_date.gte.${startDate}`)
+    .order('arrival_date', { ascending: true })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getPendingApplicationsCount(): Promise<number> {
+  const supabase = await createClient()
+  const { count, error } = await supabase
+    .from('applications')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+    .not('submitted_at', 'is', null)
+  
+  if (error) throw error
+  return count || 0
+}
+
+export async function getRoomOccupancyForDateRange(startDate: string, endDate: string): Promise<{
+  rooms: Room[];
+  residents: Resident[];
+}> {
+  const supabase = await createClient()
+  
+  // Get all rooms with beds
+  const { data: rooms, error: roomsError } = await supabase
+    .from('rooms')
+    .select(`
+      *,
+      beds (
+        *,
+        current_assignment:resident_beds (
+          *,
+          resident:residents (*)
+        )
+      )
+    `)
+    .order('name', { ascending: true })
+  
+  if (roomsError) throw roomsError
+  
+  // Get residents staying during the date range
+  const { data: residents, error: residentsError } = await supabase
+    .from('residents')
+    .select('*')
+    .lte('arrival_date', endDate)
+    .gte('departure_date', startDate)
+    .in('status', ['checked_in', 'staying', 'upcoming'])
+  
+  if (residentsError) throw residentsError
+  
+  // Process rooms to filter active assignments
+  const processedRooms = (rooms || []).map(room => ({
+    ...room,
+    beds: room.beds?.map((bed: any) => ({
+      ...bed,
+      current_assignment: bed.current_assignment?.find((a: any) => a.is_active) || null
+    }))
+  }))
+  
+  return {
+    rooms: processedRooms,
+    residents: residents || []
+  }
+}
+
 // Building queries
 export async function getBuildings(): Promise<Building[]> {
   const supabase = await createClient()

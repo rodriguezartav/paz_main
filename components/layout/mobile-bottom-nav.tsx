@@ -3,10 +3,18 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, X, Building2, BedDouble, ClipboardList, FileText, Settings } from 'lucide-react'
+import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, X, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navSections = [
+  {
+    id: 'overview',
+    title: 'Overview',
+    icon: LayoutDashboard,
+    items: [
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ],
+  },
   {
     id: 'kitchen',
     title: 'Kitchen',

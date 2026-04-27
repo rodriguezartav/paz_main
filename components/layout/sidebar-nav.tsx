@@ -2,10 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings } from 'lucide-react'
+import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navSections = [
+  {
+    title: 'Overview',
+    icon: LayoutDashboard,
+    items: [
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ],
+  },
   {
     title: 'Kitchen',
     icon: UtensilsCrossed,
@@ -72,7 +79,9 @@ export function SidebarNav({ activeSection, onSectionChange }: SidebarNavProps) 
                   {/* Section Items */}
                   <ul className="space-y-1">
                     {section.items.map((item) => {
-                      const isActive = pathname.startsWith(item.href)
+                      const isActive = item.href === '/' || item.href === '/dashboard' 
+                        ? pathname === '/' || pathname === '/dashboard'
+                        : pathname.startsWith(item.href)
                       const Icon = item.icon
                       
                       return (
