@@ -1,0 +1,108 @@
+-- Import ingredients from CSV
+-- First, add missing enum values
+
+-- Add 'roots' to ingredient_type enum if not exists
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'roots' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'ingredient_type')) THEN
+    ALTER TYPE ingredient_type ADD VALUE 'roots';
+  END IF;
+END $$;
+
+-- Add 'g' and 'l' to measurement enum if not exists
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'g' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'measurement')) THEN
+    ALTER TYPE measurement ADD VALUE 'g';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'l' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'measurement')) THEN
+    ALTER TYPE measurement ADD VALUE 'l';
+  END IF;
+END $$;
+
+-- Insert ingredients (skip duplicates based on name)
+INSERT INTO ingredients (name, type, measurement) VALUES
+  ('Huevos', 'protein', 'unit'),
+  ('Avena', 'staple', 'kg'),
+  ('Yogurt', 'dairy', 'ml'),
+  ('Aguacate', 'vegetable', 'unit'),
+  ('Banano', 'fruit', 'unit'),
+  ('Tomate Rojo', 'vegetable', 'unit'),
+  ('Arroz', 'staple', 'kg'),
+  ('Frijoles', 'staple', 'kg'),
+  ('Lechuga', 'vegetable', 'unit'),
+  ('Pepino', 'vegetable', 'unit'),
+  ('Apio', 'vegetable', 'unit'),
+  ('Zanahoria', 'roots', 'unit'),
+  ('Queso Fresco', 'dairy', 'kg'),
+  ('Cebolla Normal', 'vegetable', 'unit'),
+  ('Cebolla Morada', 'vegetable', 'unit'),
+  ('Chayote', 'vegetable', 'unit'),
+  ('Zuquini', 'vegetable', 'unit'),
+  ('Platano Maduro', 'vegetable', 'unit'),
+  ('Platano Verde', 'vegetable', 'unit'),
+  ('Brocoli', 'vegetable', 'unit'),
+  ('Coliflor', 'vegetable', 'unit'),
+  ('Camote', 'roots', 'kg'),
+  ('Repollo', 'vegetable', 'unit'),
+  ('Cus Cus', 'staple', 'kg'),
+  ('Quinoa', 'staple', 'kg'),
+  ('Pollo Cuarto', 'protein', 'kg'),
+  ('Pescado Fillet Fresco', 'protein', 'kg'),
+  ('Carne Lomito', 'protein', 'kg'),
+  ('Carne Bistek', 'protein', 'kg'),
+  ('Carne Molida Especial', 'protein', 'kg'),
+  ('Pescado Entero', 'protein', 'kg'),
+  ('Hueso Redondo Res', 'protein', 'kg'),
+  ('Costilla Res', 'protein', 'kg'),
+  ('Calabaza', 'vegetable', 'unit'),
+  ('Mango', 'fruit', 'unit'),
+  ('Granola', 'staple', 'kg'),
+  ('Papaya', 'fruit', 'unit'),
+  ('Pina', 'fruit', 'unit'),
+  ('Sandia', 'fruit', 'unit'),
+  ('Queso Rallado', 'dairy', 'kg'),
+  ('Manzana', 'fruit', 'unit'),
+  ('Naranja', 'fruit', 'unit'),
+  ('Espinaca', 'vegetable', 'unit'),
+  ('Culantro', 'vegetable', 'unit'),
+  ('Leche', 'dairy', 'l'),
+  ('Limon', 'fruit', 'unit'),
+  ('Garbanzo', 'staple', 'kg'),
+  ('Alitas de Pollo', 'protein', 'kg'),
+  ('Chile Dulce', 'vegetable', 'unit'),
+  ('Remolacha', 'vegetable', 'unit'),
+  ('Ajo', 'vegetable', 'unit'),
+  ('Yuca', 'roots', 'unit'),
+  ('Elote Entero', 'vegetable', 'unit'),
+  ('Queso Amarillo', 'dairy', 'kg'),
+  ('Miel', 'condiment', 'ml'),
+  ('Lentejas', 'staple', 'kg'),
+  ('Fresas', 'fruit', 'kg'),
+  ('Hierba Buena', 'vegetable', 'unit'),
+  ('Tofu', 'protein', 'kg'),
+  ('Pasta de Arroz', 'staple', 'kg'),
+  ('Pasta Caracol', 'staple', 'kg'),
+  ('Pasta Fideos', 'staple', 'kg'),
+  ('Pasta Lasana', 'staple', 'kg'),
+  ('Papa', 'roots', 'unit'),
+  ('Mayonesa', 'condiment', 'ml'),
+  ('Aceite Oliva', 'condiment', 'ml'),
+  ('Pollo Pechuga', 'protein', 'kg'),
+  ('Masa Maiz', 'staple', 'kg'),
+  ('Achiote', 'condiment', 'g'),
+  ('Mantequilla', 'condiment', 'unit'),
+  ('Queso Crema', 'dairy', 'ml'),
+  ('Crema Dulce', 'dairy', 'ml'),
+  ('Leche de Coco', 'dairy', 'ml'),
+  ('Romero', 'condiment', 'unit'),
+  ('Laurel', 'condiment', 'unit'),
+  ('Frijoles Rojos', 'staple', 'kg'),
+  ('Chile Panameno', 'vegetable', 'unit'),
+  ('Pollo Muslo', 'protein', 'kg'),
+  ('Azucar Moreno', 'condiment', 'kg'),
+  ('Salsa Ostion', 'condiment', 'ml'),
+  ('Pimienta', 'condiment', 'kg'),
+  ('Sal', 'condiment', 'kg'),
+  ('Curcuma Polvo', 'condiment', 'kg')
+ON CONFLICT (name) DO NOTHING;

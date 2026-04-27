@@ -49,8 +49,8 @@ export interface Payment {
 }
 
 // Ingredient Types
-export type IngredientType = 'staple' | 'protein' | 'vegetable' | 'fruit' | 'condiment' | 'dairy' | 'cleaning' | 'other'
-export type Measurement = 'kg' | 'unit' | 'ml' | 'tbsp'
+export type IngredientType = 'staple' | 'protein' | 'vegetable' | 'fruit' | 'condiment' | 'dairy' | 'cleaning' | 'roots' | 'other'
+export type Measurement = 'kg' | 'g' | 'l' | 'ml' | 'unit' | 'tbsp'
 
 export interface Ingredient {
   id: string
