@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, X } from 'lucide-react'
+import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, X, Building2, BedDouble } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navSections = [
@@ -22,6 +22,14 @@ const navSections = [
     icon: UserCircle,
     items: [
       { href: '/residents', label: 'Residents', icon: Users },
+    ],
+  },
+  {
+    id: 'buildings',
+    title: 'Buildings',
+    icon: Building2,
+    items: [
+      { href: '/rooms', label: 'Rooms', icon: BedDouble },
     ],
   },
 ]

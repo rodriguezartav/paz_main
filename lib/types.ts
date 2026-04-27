@@ -87,3 +87,36 @@ export interface ResidentWithPayment {
   resident: Resident
   payment: Payment | null
 }
+
+// Room and Bed Types
+export interface Room {
+  id: string
+  name: string
+  description: string | null
+  is_private: boolean
+  created_at: string
+  updated_at: string
+  beds?: Bed[]
+}
+
+export interface Bed {
+  id: string
+  room_id: string
+  name: string
+  created_at: string
+  updated_at: string
+  room?: Room
+  current_assignment?: ResidentBed | null
+}
+
+export interface ResidentBed {
+  id: string
+  resident_id: string
+  bed_id: string
+  assigned_at: string
+  released_at: string | null
+  is_active: boolean
+  created_at: string
+  resident?: Resident
+  bed?: Bed
+}
