@@ -85,9 +85,17 @@ export function DashboardClient({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground">Overview for the next 7 days</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground">Overview for the next 7 days</p>
+        </div>
+        <Link href="/apply">
+          <Button size="lg">
+            <ClipboardList className="mr-2 h-5 w-5" />
+            Apply to Visit
+          </Button>
+        </Link>
       </div>
 
       {/* Quick Stats */}
