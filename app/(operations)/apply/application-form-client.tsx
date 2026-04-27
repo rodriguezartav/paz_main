@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
@@ -227,8 +228,26 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
           />
         )}
         
-        {/* Single Choice */}
-        {question.question_type === 'single_choice' && (
+        {/* Single Choice - Use Select for many options, Radio for few */}
+        {question.question_type === 'single_choice' && question.options.length > 10 && (
+          <Select
+            value={value || ''}
+            onValueChange={(v) => updateAnswer(question.id, v)}
+          >
+            <SelectTrigger className={cn('w-full', error && 'border-destructive')}>
+              <SelectValue placeholder="Select an option..." />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              {question.options.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        
+        {question.question_type === 'single_choice' && question.options.length <= 10 && (
           <RadioGroup
             value={value || ''}
             onValueChange={(v) => updateAnswer(question.id, v)}
