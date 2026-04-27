@@ -1,4 +1,4 @@
-import { getDashboardResidents, getPendingApplicationsCount, getRoomOccupancyForDateRange, getRecipes } from '@/lib/db/queries'
+import { getDashboardResidents, getPendingApplicationsCount, getRoomOccupancyForDateRange, getRecipes, getMealPlansForDateRange } from '@/lib/db/queries'
 import { DashboardClient } from './dashboard-client'
 
 export const metadata = {
@@ -12,11 +12,12 @@ export default async function DashboardPage() {
   const startDate = today.toISOString().split('T')[0]
   const endDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   
-  const [residents, pendingApplications, roomData, recipes] = await Promise.all([
+  const [residents, pendingApplications, roomData, recipes, mealPlans] = await Promise.all([
     getDashboardResidents(startDate, endDate),
     getPendingApplicationsCount(),
     getRoomOccupancyForDateRange(startDate, endDate),
     getRecipes(),
+    getMealPlansForDateRange(startDate, endDate),
   ])
   
   return (
@@ -25,6 +26,7 @@ export default async function DashboardPage() {
       pendingApplications={pendingApplications}
       rooms={roomData.rooms}
       recipes={recipes}
+      mealPlans={mealPlans}
       startDate={startDate}
       endDate={endDate}
     />

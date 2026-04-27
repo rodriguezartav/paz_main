@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { Resident, Room, Recipe } from '@/lib/types'
+import type { Resident, Room, Recipe, WeeklyMealPlan, DayOfWeek } from '@/lib/types'
 import { 
   UtensilsCrossed, 
   Users, 
@@ -27,6 +27,7 @@ interface DashboardClientProps {
   pendingApplications: number
   rooms: Room[]
   recipes: Recipe[]
+  mealPlans: WeeklyMealPlan[]
   startDate: string
   endDate: string
 }
@@ -36,6 +37,7 @@ export function DashboardClient({
   pendingApplications,
   rooms,
   recipes,
+  mealPlans,
   startDate,
   endDate,
 }: DashboardClientProps) {
@@ -80,6 +82,39 @@ export function DashboardClient({
       vegetarian: dayResidents.filter(r => r.diet === 'vegetarian').length,
       vegan: dayResidents.filter(r => r.diet === 'vegan').length,
     }
+  }
+
+  // Get day of week from date
+  const getDayOfWeek = (date: Date): DayOfWeek => {
+    const days: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    return days[date.getDay()]
+  }
+
+  // Get meals for a specific date from meal plans
+  const getMealsForDay = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00')
+    const dayOfWeek = getDayOfWeek(date)
+    
+    // Find the meal plan that covers this date
+    for (const plan of mealPlans) {
+      const weekStart = new Date(plan.week_start_date + 'T00:00:00')
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekEnd.getDate() + 6)
+      
+      if (date >= weekStart && date <= weekEnd) {
+        // Found the plan, get meals for this day
+        const brunchMeal = plan.meals?.find(m => m.day_of_week === dayOfWeek && m.meal_type === 'brunch')
+        const dinnerMeal = plan.meals?.find(m => m.day_of_week === dayOfWeek && m.meal_type === 'dinner')
+        
+        return {
+          brunch: brunchMeal?.recipes?.map(r => r.recipe).filter(Boolean) || [],
+          dinner: dinnerMeal?.recipes?.map(r => r.recipe).filter(Boolean) || [],
+          hasPlan: true
+        }
+      }
+    }
+    
+    return { brunch: [], dinner: [], hasPlan: false }
   }
 
   return (
@@ -224,71 +259,87 @@ export function DashboardClient({
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <div className="pt-2 pb-1 border-t space-y-4">
-                        {/* Brunch Section */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Sun className="h-4 w-4 text-amber-500" />
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Brunch</p>
-                          </div>
-                          {recipes.filter(r => r.meal_type === 'brunch').length > 0 ? (
-                            <div className="space-y-1.5 pl-6">
-                              {recipes.filter(r => r.meal_type === 'brunch').map((recipe) => (
-                                <div key={recipe.id} className="flex items-center gap-2 text-sm">
-                                  <ChefHat className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <span>{recipe.name}</span>
-                                  {recipe.suitable_for_vegan && (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
-                                      V
-                                    </Badge>
-                                  )}
-                                  {recipe.suitable_for_vegetarian && !recipe.suitable_for_vegan && (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 text-yellow-700 border-yellow-200">
-                                      VG
-                                    </Badge>
-                                  )}
+                      {(() => {
+                        const dayMeals = getMealsForDay(day.dateString)
+                        return (
+                          <div className="pt-2 pb-1 border-t space-y-4">
+                            {!dayMeals.hasPlan && (
+                              <div className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50">
+                                <p className="text-sm text-muted-foreground">No meal plan for this day</p>
+                                <Link href="/weekly-calendar">
+                                  <Button variant="outline" size="sm">
+                                    Create Plan
+                                  </Button>
+                                </Link>
+                              </div>
+                            )}
+                            
+                            {/* Brunch Section */}
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Sun className="h-4 w-4 text-amber-500" />
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Brunch</p>
+                              </div>
+                              {dayMeals.brunch.length > 0 ? (
+                                <div className="space-y-1.5 pl-6">
+                                  {dayMeals.brunch.map((recipe) => (
+                                    <div key={recipe?.id} className="flex items-center gap-2 text-sm">
+                                      <ChefHat className="h-3.5 w-3.5 text-muted-foreground" />
+                                      <span>{recipe?.name}</span>
+                                      {recipe?.suitable_for_vegan && (
+                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
+                                          V
+                                        </Badge>
+                                      )}
+                                      {recipe?.suitable_for_vegetarian && !recipe?.suitable_for_vegan && (
+                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 text-yellow-700 border-yellow-200">
+                                          VG
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
+                              ) : (
+                                <p className="text-sm text-muted-foreground pl-6">
+                                  {dayMeals.hasPlan ? 'No brunch recipes assigned' : 'No brunch recipes yet'}
+                                </p>
+                              )}
                             </div>
-                          ) : (
-                            <p className="text-sm text-muted-foreground pl-6">No brunch recipes yet</p>
-                          )}
-                        </div>
 
-                        {/* Dinner Section */}
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Moon className="h-4 w-4 text-indigo-500" />
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dinner</p>
-                          </div>
-                          {recipes.filter(r => r.meal_type === 'dinner').length > 0 ? (
-                            <div className="space-y-1.5 pl-6">
-                              {recipes.filter(r => r.meal_type === 'dinner').map((recipe) => (
-                                <div key={recipe.id} className="flex items-center gap-2 text-sm">
-                                  <ChefHat className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <span>{recipe.name}</span>
-                                  {recipe.suitable_for_vegan && (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
-                                      V
-                                    </Badge>
-                                  )}
-                                  {recipe.suitable_for_vegetarian && !recipe.suitable_for_vegan && (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 text-yellow-700 border-yellow-200">
-                                      VG
-                                    </Badge>
-                                  )}
+                            {/* Dinner Section */}
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Moon className="h-4 w-4 text-indigo-500" />
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dinner</p>
+                              </div>
+                              {dayMeals.dinner.length > 0 ? (
+                                <div className="space-y-1.5 pl-6">
+                                  {dayMeals.dinner.map((recipe) => (
+                                    <div key={recipe?.id} className="flex items-center gap-2 text-sm">
+                                      <ChefHat className="h-3.5 w-3.5 text-muted-foreground" />
+                                      <span>{recipe?.name}</span>
+                                      {recipe?.suitable_for_vegan && (
+                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
+                                          V
+                                        </Badge>
+                                      )}
+                                      {recipe?.suitable_for_vegetarian && !recipe?.suitable_for_vegan && (
+                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 text-yellow-700 border-yellow-200">
+                                          VG
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
+                              ) : (
+                                <p className="text-sm text-muted-foreground pl-6">
+                                  {dayMeals.hasPlan ? 'No dinner recipes assigned' : 'No dinner recipes yet'}
+                                </p>
+                              )}
                             </div>
-                          ) : (
-                            <p className="text-sm text-muted-foreground pl-6">No dinner recipes yet</p>
-                          )}
-                        </div>
-
-                        {recipes.length === 0 && (
-                          <p className="text-sm text-muted-foreground">No recipes available yet</p>
-                        )}
-                      </div>
+                          </div>
+                        )
+                      })()}
                     </AccordionContent>
                   </AccordionItem>
                 )

@@ -1299,6 +1299,37 @@ export async function reorderTemplateMealRecipes(templateMealId: string, recipeI
 }
 
 // Weekly Meal Plan queries (actual calendar weeks)
+
+// Get meal plans that cover a date range (for dashboard)
+export async function getMealPlansForDateRange(startDate: string, endDate: string): Promise<WeeklyMealPlan[]> {
+  const supabase = await createClient()
+  
+  // Get all meal plans where the week might overlap with our date range
+  // A week starting up to 6 days before endDate could still overlap
+  const earliestWeekStart = new Date(startDate)
+  earliestWeekStart.setDate(earliestWeekStart.getDate() - 6)
+  
+  const { data, error } = await supabase
+    .from('weekly_meal_plans')
+    .select(`
+      *,
+      template:weekly_menu_templates (*),
+      meals:weekly_meal_plan_meals (
+        *,
+        recipes:weekly_meal_plan_recipes (
+          *,
+          recipe:recipes (*)
+        )
+      )
+    `)
+    .gte('week_start_date', earliestWeekStart.toISOString().split('T')[0])
+    .lte('week_start_date', endDate)
+    .order('week_start_date', { ascending: true })
+  
+  if (error) throw error
+  return data || []
+}
+
 export async function getWeeklyMealPlans(): Promise<WeeklyMealPlan[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
