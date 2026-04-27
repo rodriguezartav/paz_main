@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,8 +12,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import type { ApplicationSection, ApplicationQuestion } from '@/lib/types'
-import { submitApplication } from './actions'
-import { ChevronLeft, ChevronRight, Send, CheckCircle2, Loader2 } from 'lucide-react'
+import { saveDraftApplication, submitApplication } from './actions'
+import { ChevronLeft, ChevronRight, Send, CheckCircle2, Loader2, Save } from 'lucide-react'
 
 interface ApplicationFormClientProps {
   sections: ApplicationSection[]
@@ -24,8 +24,11 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [applicationId, setApplicationId] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
 
   const currentSection = sections[currentSectionIndex]
   const progress = ((currentSectionIndex + 1) / sections.length) * 100
@@ -75,8 +78,39 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
     return Object.keys(newErrors).length === 0
   }
 
-  const handleNext = () => {
+  // Build answers array for saving
+  const buildAnswersArray = useCallback(() => {
+    return sections.flatMap(section =>
+      section.questions.map(question => ({
+        question_id: question.id,
+        answer_value: answers[question.id] ?? '',
+        question_text_snapshot: question.question_text,
+        section_title_snapshot: section.title,
+        question_type_snapshot: question.question_type
+      }))
+    )
+  }, [sections, answers])
+
+  // Save current progress
+  const saveProgress = async () => {
+    setIsSaving(true)
+    try {
+      const answersToSave = buildAnswersArray()
+      const application = await saveDraftApplication(applicationId, answersToSave)
+      setApplicationId(application.id)
+      setLastSaved(new Date())
+    } catch (error) {
+      console.error('Failed to save progress:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleNext = async () => {
     if (validateCurrentSection()) {
+      // Save progress when moving to next section
+      await saveProgress()
+      
       if (currentSectionIndex < sections.length - 1) {
         setCurrentSectionIndex(prev => prev + 1)
         window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -84,8 +118,10 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
     }
   }
 
-  const handlePrevious = () => {
+  const handlePrevious = async () => {
     if (currentSectionIndex > 0) {
+      // Save progress when going back
+      await saveProgress()
       setCurrentSectionIndex(prev => prev - 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
@@ -97,18 +133,12 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
     setIsSubmitting(true)
     
     try {
-      // Build answers array for submission
-      const answersToSubmit = sections.flatMap(section =>
-        section.questions.map(question => ({
-          question_id: question.id,
-          answer_value: answers[question.id] ?? '',
-          question_text_snapshot: question.question_text,
-          section_title_snapshot: section.title,
-          question_type_snapshot: question.question_type
-        }))
-      )
+      // First save the final state
+      const answersToSave = buildAnswersArray()
+      const application = await saveDraftApplication(applicationId, answersToSave)
       
-      await submitApplication(answersToSubmit)
+      // Then submit
+      await submitApplication(application.id)
       setIsSubmitted(true)
     } catch (error) {
       console.error('Failed to submit application:', error)
@@ -298,10 +328,20 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
       {/* Header */}
       <div className="border-b border-border bg-sidebar/50 px-4 py-6 md:px-8">
         <div className="mx-auto max-w-2xl">
-          <h1 className="text-2xl font-semibold text-foreground">Apply to Paz Corcovado</h1>
-          <p className="mt-1 text-muted-foreground">
-            Please answer thoughtfully. This helps us understand if Paz is right for you.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-foreground">Apply to Paz Corcovado</h1>
+              <p className="mt-1 text-muted-foreground">
+                Please answer thoughtfully. This helps us understand if Paz is right for you.
+              </p>
+            </div>
+            {lastSaved && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Save className="h-4 w-4" />
+                <span>Saved {lastSaved.toLocaleTimeString()}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -340,17 +380,21 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
             <Button
               variant="outline"
               onClick={handlePrevious}
-              disabled={currentSectionIndex === 0}
+              disabled={currentSectionIndex === 0 || isSaving}
               className="gap-2"
             >
-              <ChevronLeft className="h-4 w-4" />
+              {isSaving && currentSectionIndex > 0 ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
               Previous
             </Button>
 
             {isLastSection ? (
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSaving}
                 className="gap-2"
               >
                 {isSubmitting ? (
@@ -366,9 +410,18 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
                 )}
               </Button>
             ) : (
-              <Button onClick={handleNext} className="gap-2">
-                Next
-                <ChevronRight className="h-4 w-4" />
+              <Button onClick={handleNext} disabled={isSaving} className="gap-2">
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                )}
               </Button>
             )}
           </div>
@@ -378,12 +431,18 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
             {sections.map((section, index) => (
               <button
                 key={section.key}
-                onClick={() => {
-                  if (index < currentSectionIndex || validateCurrentSection()) {
+                onClick={async () => {
+                  if (index < currentSectionIndex) {
+                    await saveProgress()
+                    setCurrentSectionIndex(index)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  } else if (index > currentSectionIndex && validateCurrentSection()) {
+                    await saveProgress()
                     setCurrentSectionIndex(index)
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }
                 }}
+                disabled={isSaving}
                 className={cn(
                   'h-2.5 w-2.5 rounded-full transition-colors',
                   index === currentSectionIndex

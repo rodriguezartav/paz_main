@@ -855,3 +855,105 @@ export async function deleteApplication(id: string): Promise<void> {
   
   if (error) throw error
 }
+
+// Draft application support - saves progress at each section
+export async function createOrUpdateDraftApplication(
+  applicationId: string | null,
+  answers: { question_id: string; answer_value: any; question_text_snapshot: string; section_title_snapshot: string; question_type_snapshot: string }[]
+): Promise<Application> {
+  const supabase = await createClient()
+  
+  // Extract name, email, phone from answers
+  let applicantName: string | null = null
+  let applicantEmail: string | null = null
+  let applicantPhone: string | null = null
+  
+  for (const answer of answers) {
+    const text = answer.question_text_snapshot.toLowerCase()
+    if (text.includes('full name') && answer.answer_value) {
+      applicantName = String(answer.answer_value)
+    } else if (text === 'email' && answer.answer_value) {
+      applicantEmail = String(answer.answer_value)
+    } else if (text.includes('whatsapp') && answer.answer_value) {
+      applicantPhone = String(answer.answer_value)
+    }
+  }
+  
+  let application: Application
+  
+  if (applicationId) {
+    // Update existing application
+    const { data, error } = await supabase
+      .from('applications')
+      .update({
+        applicant_name: applicantName,
+        applicant_email: applicantEmail,
+        applicant_phone: applicantPhone
+      })
+      .eq('id', applicationId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    application = data
+    
+    // Delete existing answers and re-insert (simpler than upsert for JSONB)
+    await supabase
+      .from('application_answers')
+      .delete()
+      .eq('application_id', applicationId)
+  } else {
+    // Create new draft application (no submitted_at means it's a draft)
+    const { data, error } = await supabase
+      .from('applications')
+      .insert({
+        applicant_name: applicantName,
+        applicant_email: applicantEmail,
+        applicant_phone: applicantPhone,
+        status: 'pending',
+        submitted_at: null
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    application = data
+  }
+  
+  // Insert answers (only those with values)
+  const answersToInsert = answers
+    .filter(a => a.answer_value !== undefined && a.answer_value !== null && a.answer_value !== '')
+    .map(a => ({
+      application_id: application.id,
+      question_id: a.question_id,
+      answer_value: JSON.stringify(a.answer_value),
+      question_text_snapshot: a.question_text_snapshot,
+      section_title_snapshot: a.section_title_snapshot,
+      question_type_snapshot: a.question_type_snapshot
+    }))
+  
+  if (answersToInsert.length > 0) {
+    const { error: answersError } = await supabase
+      .from('application_answers')
+      .insert(answersToInsert)
+    
+    if (answersError) throw answersError
+  }
+  
+  return application
+}
+
+export async function submitDraftApplication(applicationId: string): Promise<Application> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('applications')
+    .update({
+      submitted_at: new Date().toISOString()
+    })
+    .eq('id', applicationId)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}

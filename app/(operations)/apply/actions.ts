@@ -1,6 +1,6 @@
 'use server'
 
-import { createApplication } from '@/lib/db/queries'
+import { createOrUpdateDraftApplication, submitDraftApplication } from '@/lib/db/queries'
 import { revalidatePath } from 'next/cache'
 
 interface AnswerData {
@@ -11,8 +11,13 @@ interface AnswerData {
   question_type_snapshot: string
 }
 
-export async function submitApplication(answers: AnswerData[]) {
-  const application = await createApplication(answers)
+export async function saveDraftApplication(applicationId: string | null, answers: AnswerData[]) {
+  const application = await createOrUpdateDraftApplication(applicationId, answers)
+  return application
+}
+
+export async function submitApplication(applicationId: string) {
+  const application = await submitDraftApplication(applicationId)
   revalidatePath('/applications')
   return application
 }
