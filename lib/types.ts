@@ -132,3 +132,58 @@ export interface ResidentBed {
   resident?: Resident
   bed?: Bed
 }
+
+// Application Types
+export type QuestionType = 'short_text' | 'long_text' | 'single_choice' | 'multiple_choice' | 'date' | 'number' | 'email' | 'phone' | 'checkbox' | 'agreement'
+export type ApplicationStatus = 'pending' | 'reviewing' | 'accepted' | 'rejected' | 'waitlist' | 'needs_more_info'
+
+export interface ApplicationQuestion {
+  id: string
+  section_key: string
+  section_title: string
+  section_intro: string | null
+  question_text: string
+  question_description: string | null
+  question_type: QuestionType
+  options: string[]
+  required: boolean
+  order_index: number
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Application {
+  id: string
+  applicant_name: string | null
+  applicant_email: string | null
+  applicant_phone: string | null
+  status: ApplicationStatus
+  submitted_at: string | null
+  reviewed_at: string | null
+  reviewer_notes: string | null
+  internal_score: number | null
+  created_at: string
+  updated_at: string
+  answers?: ApplicationAnswer[]
+}
+
+export interface ApplicationAnswer {
+  id: string
+  application_id: string
+  question_id: string
+  answer_value: string | string[] | number | boolean
+  question_text_snapshot: string
+  section_title_snapshot: string
+  question_type_snapshot: string
+  created_at: string
+  updated_at: string
+  question?: ApplicationQuestion
+}
+
+export interface ApplicationSection {
+  key: string
+  title: string
+  intro: string | null
+  questions: ApplicationQuestion[]
+}

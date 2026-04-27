@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed } from '@/lib/types'
+import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection } from '@/lib/types'
 
 // Resident queries
 export async function getResidents(): Promise<Resident[]> {
@@ -636,4 +636,222 @@ export async function getActiveResidents(): Promise<Resident[]> {
   
   if (error) throw error
   return data || []
+}
+
+// Application Question queries
+export async function getApplicationQuestions(activeOnly = true): Promise<ApplicationQuestion[]> {
+  const supabase = await createClient()
+  let query = supabase
+    .from('application_questions')
+    .select('*')
+    .order('section_key', { ascending: true })
+    .order('order_index', { ascending: true })
+  
+  if (activeOnly) {
+    query = query.eq('active', true)
+  }
+  
+  const { data, error } = await query
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getApplicationSections(activeOnly = true): Promise<ApplicationSection[]> {
+  const questions = await getApplicationQuestions(activeOnly)
+  
+  const sectionMap = new Map<string, ApplicationSection>()
+  const sectionOrder = [
+    'basic_info', 'reason_coming', 'essentials', 'digital_detox', 
+    'emotional_maturity', 'community_life', 'nature_risk', 
+    'activities', 'work_wifi', 'expectations', 'final_note'
+  ]
+  
+  for (const question of questions) {
+    if (!sectionMap.has(question.section_key)) {
+      sectionMap.set(question.section_key, {
+        key: question.section_key,
+        title: question.section_title,
+        intro: question.section_intro,
+        questions: []
+      })
+    }
+    sectionMap.get(question.section_key)!.questions.push(question)
+  }
+  
+  // Sort sections according to predefined order
+  const sections: ApplicationSection[] = []
+  for (const key of sectionOrder) {
+    if (sectionMap.has(key)) {
+      sections.push(sectionMap.get(key)!)
+    }
+  }
+  
+  // Add any sections not in the predefined order at the end
+  for (const [key, section] of sectionMap) {
+    if (!sectionOrder.includes(key)) {
+      sections.push(section)
+    }
+  }
+  
+  return sections
+}
+
+export async function getApplicationQuestionById(id: string): Promise<ApplicationQuestion | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('application_questions')
+    .select('*')
+    .eq('id', id)
+    .single()
+  
+  if (error) return null
+  return data
+}
+
+export async function createApplicationQuestion(question: Omit<ApplicationQuestion, 'id' | 'created_at' | 'updated_at'>): Promise<ApplicationQuestion> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('application_questions')
+    .insert(question)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function updateApplicationQuestion(id: string, question: Partial<Omit<ApplicationQuestion, 'id' | 'created_at' | 'updated_at'>>): Promise<ApplicationQuestion> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('application_questions')
+    .update(question)
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function deleteApplicationQuestion(id: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('application_questions')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
+}
+
+// Application queries
+export async function getApplications(): Promise<Application[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('applications')
+    .select(`
+      *,
+      answers:application_answers (
+        *,
+        question:application_questions (*)
+      )
+    `)
+    .order('submitted_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getApplicationById(id: string): Promise<Application | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('applications')
+    .select(`
+      *,
+      answers:application_answers (
+        *,
+        question:application_questions (*)
+      )
+    `)
+    .eq('id', id)
+    .single()
+  
+  if (error) return null
+  return data
+}
+
+export async function createApplication(answers: { question_id: string; answer_value: any; question_text_snapshot: string; section_title_snapshot: string; question_type_snapshot: string }[]): Promise<Application> {
+  const supabase = await createClient()
+  
+  // Extract name, email, phone from answers
+  let applicantName: string | null = null
+  let applicantEmail: string | null = null
+  let applicantPhone: string | null = null
+  
+  for (const answer of answers) {
+    const text = answer.question_text_snapshot.toLowerCase()
+    if (text.includes('full name')) {
+      applicantName = String(answer.answer_value)
+    } else if (text === 'email') {
+      applicantEmail = String(answer.answer_value)
+    } else if (text.includes('whatsapp')) {
+      applicantPhone = String(answer.answer_value)
+    }
+  }
+  
+  // Create application
+  const { data: application, error: appError } = await supabase
+    .from('applications')
+    .insert({
+      applicant_name: applicantName,
+      applicant_email: applicantEmail,
+      applicant_phone: applicantPhone,
+      status: 'pending',
+      submitted_at: new Date().toISOString()
+    })
+    .select()
+    .single()
+  
+  if (appError) throw appError
+  
+  // Create answers
+  const answersToInsert = answers.map(a => ({
+    application_id: application.id,
+    question_id: a.question_id,
+    answer_value: JSON.stringify(a.answer_value),
+    question_text_snapshot: a.question_text_snapshot,
+    section_title_snapshot: a.section_title_snapshot,
+    question_type_snapshot: a.question_type_snapshot
+  }))
+  
+  const { error: answersError } = await supabase
+    .from('application_answers')
+    .insert(answersToInsert)
+  
+  if (answersError) throw answersError
+  
+  return application
+}
+
+export async function updateApplication(id: string, updates: Partial<Omit<Application, 'id' | 'created_at' | 'updated_at' | 'answers'>>): Promise<Application> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('applications')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function deleteApplication(id: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('applications')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
 }
