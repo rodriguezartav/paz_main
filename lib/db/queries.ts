@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Room, Bed, ResidentBed } from '@/lib/types'
+import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed } from '@/lib/types'
 
 // Resident queries
 export async function getResidents(): Promise<Resident[]> {
@@ -301,6 +301,110 @@ export function calculateNights(arrivalDate: string, departureDate: string): num
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 }
 
+// Building queries
+export async function getBuildings(): Promise<Building[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('buildings')
+    .select(`
+      *,
+      rooms (
+        *,
+        beds (
+          *,
+          current_assignment:resident_beds (
+            *,
+            resident:residents (*)
+          )
+        )
+      )
+    `)
+    .order('name', { ascending: true })
+  
+  if (error) throw error
+  
+  // Filter to only active assignments in beds
+  return (data || []).map(building => ({
+    ...building,
+    rooms: building.rooms?.map((room: any) => ({
+      ...room,
+      beds: room.beds?.map((bed: any) => ({
+        ...bed,
+        current_assignment: bed.current_assignment?.find((a: any) => a.is_active) || null
+      }))
+    }))
+  }))
+}
+
+export async function getBuildingById(id: string): Promise<Building | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('buildings')
+    .select(`
+      *,
+      rooms (
+        *,
+        beds (
+          *,
+          current_assignment:resident_beds (
+            *,
+            resident:residents (*)
+          )
+        )
+      )
+    `)
+    .eq('id', id)
+    .single()
+  
+  if (error) return null
+  
+  return {
+    ...data,
+    rooms: data.rooms?.map((room: any) => ({
+      ...room,
+      beds: room.beds?.map((bed: any) => ({
+        ...bed,
+        current_assignment: bed.current_assignment?.find((a: any) => a.is_active) || null
+      }))
+    }))
+  }
+}
+
+export async function createBuilding(building: Omit<Building, 'id' | 'created_at' | 'updated_at' | 'rooms'>): Promise<Building> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('buildings')
+    .insert(building)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function updateBuilding(id: string, building: Partial<Omit<Building, 'id' | 'created_at' | 'updated_at' | 'rooms'>>): Promise<Building> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('buildings')
+    .update(building)
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function deleteBuilding(id: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('buildings')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
+}
+
 // Room queries
 export async function getRooms(): Promise<Room[]> {
   const supabase = await createClient()
@@ -358,7 +462,7 @@ export async function getRoomById(id: string): Promise<Room | null> {
   }
 }
 
-export async function createRoom(room: Omit<Room, 'id' | 'created_at' | 'updated_at' | 'beds'>): Promise<Room> {
+export async function createRoom(room: Omit<Room, 'id' | 'created_at' | 'updated_at' | 'beds' | 'building'>): Promise<Room> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('rooms')
@@ -370,7 +474,7 @@ export async function createRoom(room: Omit<Room, 'id' | 'created_at' | 'updated
   return data
 }
 
-export async function updateRoom(id: string, room: Partial<Omit<Room, 'id' | 'created_at' | 'updated_at' | 'beds'>>): Promise<Room> {
+export async function updateRoom(id: string, room: Partial<Omit<Room, 'id' | 'created_at' | 'updated_at' | 'beds' | 'building'>>): Promise<Room> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('rooms')

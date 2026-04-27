@@ -88,15 +88,27 @@ export interface ResidentWithPayment {
   payment: Payment | null
 }
 
+// Building Types
+export interface Building {
+  id: string
+  name: string
+  description: string | null
+  created_at: string
+  updated_at: string
+  rooms?: Room[]
+}
+
 // Room and Bed Types
 export interface Room {
   id: string
+  building_id: string | null
   name: string
   description: string | null
   is_private: boolean
   created_at: string
   updated_at: string
   beds?: Bed[]
+  building?: Building
 }
 
 export interface Bed {

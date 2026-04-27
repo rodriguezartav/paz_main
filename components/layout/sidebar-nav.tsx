@@ -25,6 +25,7 @@ const navSections = [
     title: 'Buildings',
     icon: Building2,
     items: [
+      { href: '/buildings', label: 'Manage Buildings', icon: Building2 },
       { href: '/rooms', label: 'Rooms', icon: BedDouble },
     ],
   },
