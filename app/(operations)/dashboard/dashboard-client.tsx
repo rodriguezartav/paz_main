@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Resident, Room, Recipe } from '@/lib/types'
@@ -14,7 +15,8 @@ import {
   Calendar,
   UserPlus,
   UserMinus,
-  UserCheck
+  UserCheck,
+  ChefHat
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -156,7 +158,7 @@ export function DashboardClient({
                   <UtensilsCrossed className="h-5 w-5" />
                   Meals Planning
                 </CardTitle>
-                <CardDescription>Diet breakdown for next 7 days</CardDescription>
+                <CardDescription>Diet breakdown and menu for next 7 days</CardDescription>
               </div>
               <Link href="/recipes">
                 <Button variant="ghost" size="sm">
@@ -165,51 +167,88 @@ export function DashboardClient({
               </Link>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {days.map((day) => {
+          <CardContent className="pt-0">
+            <Accordion type="single" collapsible defaultValue="day-0" className="w-full">
+              {days.map((day, index) => {
                 const diets = getDietCounts(day.dateString)
                 return (
-                  <div 
+                  <AccordionItem 
                     key={day.dateString} 
+                    value={`day-${index}`}
                     className={cn(
-                      "flex items-center justify-between rounded-lg border p-3",
+                      "rounded-lg border px-3 mb-2 last:mb-0",
                       day.label === 'Today' && "bg-primary/5 border-primary/20"
                     )}
                   >
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className={cn(
-                        "text-sm font-medium",
-                        day.label === 'Today' && "text-primary"
-                      )}>
-                        {day.label}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {diets.total} people
-                      </Badge>
-                      {diets.eatsAll > 0 && (
-                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                          {diets.eatsAll} all
-                        </Badge>
-                      )}
-                      {diets.vegetarian > 0 && (
-                        <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
-                          {diets.vegetarian} veg
-                        </Badge>
-                      )}
-                      {diets.vegan > 0 && (
-                        <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
-                          {diets.vegan} vegan
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+                    <AccordionTrigger className="py-3 hover:no-underline">
+                      <div className="flex items-center justify-between w-full pr-2">
+                        <div className="flex items-center gap-3">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className={cn(
+                            "text-sm font-medium",
+                            day.label === 'Today' && "text-primary"
+                          )}>
+                            {day.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {diets.total} people
+                          </Badge>
+                          {diets.eatsAll > 0 && (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                              {diets.eatsAll} all
+                            </Badge>
+                          )}
+                          {diets.vegetarian > 0 && (
+                            <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
+                              {diets.vegetarian} veg
+                            </Badge>
+                          )}
+                          {diets.vegan > 0 && (
+                            <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                              {diets.vegan} vegan
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="pt-2 pb-1 border-t">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Today&apos;s Menu</p>
+                        {recipes.length > 0 ? (
+                          <div className="space-y-2">
+                            {recipes.slice(0, 4).map((recipe) => (
+                              <div key={recipe.id} className="flex items-center gap-2 text-sm">
+                                <ChefHat className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span>{recipe.name}</span>
+                                {recipe.suitable_for_vegan && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-200">
+                                    V
+                                  </Badge>
+                                )}
+                                {recipe.suitable_for_vegetarian && !recipe.suitable_for_vegan && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 text-yellow-700 border-yellow-200">
+                                    VG
+                                  </Badge>
+                                )}
+                              </div>
+                            ))}
+                            {recipes.length > 4 && (
+                              <Link href="/recipes" className="text-xs text-primary hover:underline">
+                                +{recipes.length - 4} more recipes
+                              </Link>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No recipes planned yet</p>
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 )
               })}
-            </div>
+            </Accordion>
           </CardContent>
         </Card>
 
