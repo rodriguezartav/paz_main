@@ -192,3 +192,44 @@ export interface ApplicationSection {
   intro: string | null
   questions: ApplicationQuestion[]
 }
+
+// Meal Planner Types
+export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+export type RecipeRole = 'main' | 'side' | 'salad' | 'sauce' | 'protein' | 'base' | 'vegetarian_alternative' | 'vegan_alternative' | 'extra'
+export type ServingTarget = 'everyone' | 'eats_all' | 'vegetarian' | 'vegan' | 'vegetarian_and_vegan' | 'custom'
+
+export interface WeeklyMenuTemplate {
+  id: string
+  name: string
+  description: string | null
+  active: boolean
+  created_at: string
+  updated_at: string
+  meals?: WeeklyMenuTemplateMeal[]
+}
+
+export interface WeeklyMenuTemplateMeal {
+  id: string
+  weekly_menu_template_id: string
+  day_of_week: DayOfWeek
+  meal_type: MealType
+  prep_day_offset: number
+  order_index: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+  recipes?: WeeklyMenuTemplateMealRecipe[]
+}
+
+export interface WeeklyMenuTemplateMealRecipe {
+  id: string
+  template_meal_id: string
+  recipe_id: string
+  recipe_role: RecipeRole
+  serving_target: ServingTarget
+  order_index: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+  recipe?: Recipe
+}

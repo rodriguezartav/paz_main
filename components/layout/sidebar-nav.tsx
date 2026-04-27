@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard } from 'lucide-react'
+import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navSections = [
@@ -19,6 +19,7 @@ const navSections = [
     items: [
       { href: '/ingredients', label: 'Ingredients', icon: Carrot },
       { href: '/recipes', label: 'Recipes', icon: ChefHat },
+      { href: '/meal-planner', label: 'Meal Planner', icon: CalendarDays },
     ],
   },
   {

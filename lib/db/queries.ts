@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection } from '@/lib/types'
+import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection, WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, DayOfWeek, MealType } from '@/lib/types'
 
 // Resident queries
 export async function getResidents(): Promise<Resident[]> {
@@ -1029,4 +1029,271 @@ export async function submitDraftApplication(applicationId: string): Promise<App
   
   if (error) throw error
   return data
+}
+
+// Weekly Menu Template queries
+const DAYS_OF_WEEK: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+const MEAL_TYPES: MealType[] = ['brunch', 'dinner']
+
+export async function getWeeklyMenuTemplates(): Promise<WeeklyMenuTemplate[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('weekly_menu_templates')
+    .select(`
+      *,
+      meals:weekly_menu_template_meals (
+        *,
+        recipes:weekly_menu_template_meal_recipes (
+          *,
+          recipe:recipes (*)
+        )
+      )
+    `)
+    .order('name', { ascending: true })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getWeeklyMenuTemplateById(id: string): Promise<WeeklyMenuTemplate | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('weekly_menu_templates')
+    .select(`
+      *,
+      meals:weekly_menu_template_meals (
+        *,
+        recipes:weekly_menu_template_meal_recipes (
+          *,
+          recipe:recipes (*)
+        )
+      )
+    `)
+    .eq('id', id)
+    .single()
+  
+  if (error) return null
+  return data
+}
+
+export async function createWeeklyMenuTemplate(template: { name: string; description: string | null }): Promise<WeeklyMenuTemplate> {
+  const supabase = await createClient()
+  
+  // Create the template
+  const { data: templateData, error: templateError } = await supabase
+    .from('weekly_menu_templates')
+    .insert({
+      name: template.name,
+      description: template.description,
+      active: true
+    })
+    .select()
+    .single()
+  
+  if (templateError) throw templateError
+  
+  // Create all 14 meal slots
+  const meals: { weekly_menu_template_id: string; day_of_week: DayOfWeek; meal_type: MealType; prep_day_offset: number; order_index: number }[] = []
+  let orderIndex = 0
+  
+  for (const day of DAYS_OF_WEEK) {
+    for (const mealType of MEAL_TYPES) {
+      // Default prep_day_offset: -1 for Wednesday and Sunday (prepped day before)
+      const prepDayOffset = (day === 'wednesday' || day === 'sunday') ? -1 : 0
+      
+      meals.push({
+        weekly_menu_template_id: templateData.id,
+        day_of_week: day,
+        meal_type: mealType,
+        prep_day_offset: prepDayOffset,
+        order_index: orderIndex++
+      })
+    }
+  }
+  
+  const { error: mealsError } = await supabase
+    .from('weekly_menu_template_meals')
+    .insert(meals)
+  
+  if (mealsError) throw mealsError
+  
+  // Return the template with meals
+  return getWeeklyMenuTemplateById(templateData.id) as Promise<WeeklyMenuTemplate>
+}
+
+export async function updateWeeklyMenuTemplate(id: string, updates: Partial<{ name: string; description: string | null; active: boolean }>): Promise<WeeklyMenuTemplate> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('weekly_menu_templates')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function deleteWeeklyMenuTemplate(id: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('weekly_menu_templates')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
+}
+
+export async function duplicateWeeklyMenuTemplate(id: string, newName: string): Promise<WeeklyMenuTemplate> {
+  const supabase = await createClient()
+  
+  // Get the original template with all meals and recipes
+  const original = await getWeeklyMenuTemplateById(id)
+  if (!original) throw new Error('Template not found')
+  
+  // Create the new template
+  const { data: newTemplate, error: templateError } = await supabase
+    .from('weekly_menu_templates')
+    .insert({
+      name: newName,
+      description: original.description,
+      active: false // Start as inactive
+    })
+    .select()
+    .single()
+  
+  if (templateError) throw templateError
+  
+  // Duplicate all meals
+  if (original.meals) {
+    for (const meal of original.meals) {
+      const { data: newMeal, error: mealError } = await supabase
+        .from('weekly_menu_template_meals')
+        .insert({
+          weekly_menu_template_id: newTemplate.id,
+          day_of_week: meal.day_of_week,
+          meal_type: meal.meal_type,
+          prep_day_offset: meal.prep_day_offset,
+          order_index: meal.order_index,
+          notes: meal.notes
+        })
+        .select()
+        .single()
+      
+      if (mealError) throw mealError
+      
+      // Duplicate meal recipes
+      if (meal.recipes && meal.recipes.length > 0) {
+        const recipesToInsert = meal.recipes.map(r => ({
+          template_meal_id: newMeal.id,
+          recipe_id: r.recipe_id,
+          recipe_role: r.recipe_role,
+          serving_target: r.serving_target,
+          order_index: r.order_index,
+          notes: r.notes
+        }))
+        
+        const { error: recipesError } = await supabase
+          .from('weekly_menu_template_meal_recipes')
+          .insert(recipesToInsert)
+        
+        if (recipesError) throw recipesError
+      }
+    }
+  }
+  
+  return getWeeklyMenuTemplateById(newTemplate.id) as Promise<WeeklyMenuTemplate>
+}
+
+// Template Meal queries
+export async function updateTemplateMeal(id: string, updates: Partial<{ prep_day_offset: number; notes: string | null }>): Promise<WeeklyMenuTemplateMeal> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('weekly_menu_template_meals')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+// Template Meal Recipe queries
+export async function addRecipeToTemplateMeal(
+  templateMealId: string,
+  recipeId: string,
+  recipeRole: string,
+  servingTarget: string,
+  notes?: string
+): Promise<WeeklyMenuTemplateMealRecipe> {
+  const supabase = await createClient()
+  
+  // Get current max order_index
+  const { data: existing } = await supabase
+    .from('weekly_menu_template_meal_recipes')
+    .select('order_index')
+    .eq('template_meal_id', templateMealId)
+    .order('order_index', { ascending: false })
+    .limit(1)
+  
+  const orderIndex = existing && existing.length > 0 ? existing[0].order_index + 1 : 0
+  
+  const { data, error } = await supabase
+    .from('weekly_menu_template_meal_recipes')
+    .insert({
+      template_meal_id: templateMealId,
+      recipe_id: recipeId,
+      recipe_role: recipeRole,
+      serving_target: servingTarget,
+      order_index: orderIndex,
+      notes: notes || null
+    })
+    .select(`
+      *,
+      recipe:recipes (*)
+    `)
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function updateTemplateMealRecipe(
+  id: string,
+  updates: Partial<{ recipe_role: string; serving_target: string; order_index: number; notes: string | null }>
+): Promise<WeeklyMenuTemplateMealRecipe> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('weekly_menu_template_meal_recipes')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function removeRecipeFromTemplateMeal(id: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('weekly_menu_template_meal_recipes')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
+}
+
+export async function reorderTemplateMealRecipes(templateMealId: string, recipeIds: string[]): Promise<void> {
+  const supabase = await createClient()
+  
+  for (let i = 0; i < recipeIds.length; i++) {
+    const { error } = await supabase
+      .from('weekly_menu_template_meal_recipes')
+      .update({ order_index: i })
+      .eq('id', recipeIds[i])
+    
+    if (error) throw error
+  }
 }
