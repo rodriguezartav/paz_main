@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ResidentDetailsPanel } from '@/components/residents/resident-details-panel'
-import { residents, payments } from '@/lib/data'
+import { getResidentById, getPaymentByResidentId } from '@/lib/db/queries'
 import { ArrowLeft } from 'lucide-react'
 
 interface PageProps {
@@ -11,13 +11,13 @@ interface PageProps {
 
 export default async function ResidentDetailsPage({ params }: PageProps) {
   const { id } = await params
-  const resident = residents.find(r => r.id === id)
+  const resident = await getResidentById(id)
   
   if (!resident) {
     notFound()
   }
 
-  const payment = payments.find(p => p.residentId === id)
+  const payment = await getPaymentByResidentId(id)
 
   return (
     <div className="space-y-6">

@@ -9,39 +9,43 @@ export interface Resident {
   id: string
   name: string
   email: string
-  whatsapp: string
-  emergencyContact: string
-  nationality: string
+  whatsapp: string | null
+  emergency_contact: string | null
+  nationality: string | null
   gender: Gender
-  age: number
+  age: number | null
   diet: Diet
-  arrivalDate: string
-  departureDate: string
-  room: string
-  bed: string
+  arrival_date: string
+  departure_date: string
+  room: string | null
+  bed: string | null
   status: ResidentStatus
-  checkInCompleted: boolean
-  releaseAccepted: boolean
-  healthInsuranceConfirmed: boolean
-  mediaReleaseAccepted: boolean
-  orientationCompleted: boolean
-  notes: string
+  check_in_completed: boolean
+  release_accepted: boolean
+  health_insurance_confirmed: boolean
+  media_release_accepted: boolean
+  orientation_completed: boolean
+  notes: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface Payment {
   id: string
-  residentId: string
-  totalAmount: number
-  pricePerNight: number
-  depositAmount: number
-  amountPaid: number
-  balanceDue: number
+  resident_id: string
+  total_amount: number
+  price_per_night: number
+  deposit_amount: number
+  amount_paid: number
+  balance_due: number
   currency: string
   status: PaymentStatus
-  method: PaymentMethod
-  paymentDate: string
-  proofUrl: string | null
-  notes: string
+  method: PaymentMethod | null
+  payment_date: string | null
+  proof_url: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
 }
 
 // Ingredient Types
@@ -53,21 +57,33 @@ export interface Ingredient {
   name: string
   type: IngredientType
   measurement: Measurement
+  created_at: string
+  updated_at: string
 }
 
 // Recipe Types
 export interface RecipeIngredient {
   id: string
-  recipeId: string
-  ingredientId: string
+  recipe_id: string
+  ingredient_id: string
   amount: number
   measurement: Measurement
+  created_at: string
+  ingredient?: Ingredient
 }
 
 export interface Recipe {
   id: string
   name: string
-  description: string
-  notes: string
-  ingredients: RecipeIngredient[]
+  description: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  recipe_ingredients?: RecipeIngredient[]
+}
+
+// Helper type for resident with payment
+export interface ResidentWithPayment {
+  resident: Resident
+  payment: Payment | null
 }

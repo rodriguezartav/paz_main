@@ -12,7 +12,8 @@ interface IngredientFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   ingredient?: Ingredient | null
-  onSave: (ingredient: Omit<Ingredient, 'id'> & { id?: string }) => void
+  onSave: (ingredient: Omit<Ingredient, 'id' | 'created_at' | 'updated_at'> & { id?: string }) => void
+  isLoading?: boolean
 }
 
 const ingredientTypes: { value: IngredientType; label: string }[] = [
@@ -33,7 +34,7 @@ const measurements: { value: Measurement; label: string }[] = [
   { value: 'tbsp', label: 'tbsp' }
 ]
 
-export function IngredientForm({ open, onOpenChange, ingredient, onSave }: IngredientFormProps) {
+export function IngredientForm({ open, onOpenChange, ingredient, onSave, isLoading }: IngredientFormProps) {
   const [name, setName] = useState('')
   const [type, setType] = useState<IngredientType>('staple')
   const [measurement, setMeasurement] = useState<Measurement>('kg')
@@ -60,7 +61,6 @@ export function IngredientForm({ open, onOpenChange, ingredient, onSave }: Ingre
       type,
       measurement
     })
-    onOpenChange(false)
   }
 
   return (
@@ -113,11 +113,11 @@ export function IngredientForm({ open, onOpenChange, ingredient, onSave }: Ingre
             </Select>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit">
-              {isEditing ? 'Save Changes' : 'Add Ingredient'}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Ingredient'}
             </Button>
           </DialogFooter>
         </form>

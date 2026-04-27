@@ -8,21 +8,21 @@ import { StatusBadge } from './status-badge'
 import { PaymentStatusBadge } from './payment-status-badge'
 import { BalanceDueBadge } from './balance-due-badge'
 import type { Resident, Payment } from '@/lib/types'
-import { calculateNights } from '@/lib/data'
+import { calculateNights } from '@/lib/utils/date'
 import { Calendar, MapPin, User, CheckCircle2, XCircle } from 'lucide-react'
 
 interface ResidentCardProps {
   resident: Resident
-  payment?: Payment
+  payment?: Payment | null
 }
 
 function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const date = new Date(dateString + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
 export function ResidentCard({ resident, payment }: ResidentCardProps) {
-  const nights = calculateNights(resident.arrivalDate, resident.departureDate)
+  const nights = calculateNights(resident.arrival_date, resident.departure_date)
   
   return (
     <Card className="border-border bg-card transition-shadow hover:shadow-md">
@@ -50,7 +50,7 @@ export function ResidentCard({ resident, payment }: ResidentCardProps) {
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="text-card-foreground">
-              {formatDate(resident.arrivalDate)} - {formatDate(resident.departureDate)}
+              {formatDate(resident.arrival_date)} - {formatDate(resident.departure_date)}
             </span>
             <span className="text-muted-foreground">({nights} nights)</span>
           </div>
@@ -70,16 +70,16 @@ export function ResidentCard({ resident, payment }: ResidentCardProps) {
             <div className="flex items-center justify-between">
               <PaymentStatusBadge status={payment.status} />
               <span className="text-sm font-medium text-card-foreground">
-                {payment.currency === 'CRC' ? '₡' : '$'}{payment.amountPaid.toLocaleString()} / {payment.currency === 'CRC' ? '₡' : '$'}{payment.totalAmount.toLocaleString()}
+                {payment.currency === 'CRC' ? '₡' : '$'}{payment.amount_paid.toLocaleString()} / {payment.currency === 'CRC' ? '₡' : '$'}{payment.total_amount.toLocaleString()}
               </span>
             </div>
-            <BalanceDueBadge balanceDue={payment.balanceDue} currency={payment.currency} />
+            <BalanceDueBadge balanceDue={payment.balance_due} currency={payment.currency} />
           </div>
         )}
 
         {/* Check-in Status */}
         <div className="flex items-center gap-2 text-sm">
-          {resident.checkInCompleted ? (
+          {resident.check_in_completed ? (
             <>
               <CheckCircle2 className="h-4 w-4 text-paz-green" />
               <span className="text-paz-green">Check-in completed</span>
