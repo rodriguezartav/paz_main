@@ -233,3 +233,50 @@ export interface WeeklyMenuTemplateMealRecipe {
   updated_at: string
   recipe?: Recipe
 }
+
+// Weekly Meal Plan Types (actual calendar weeks)
+export interface WeeklyMealPlan {
+  id: string
+  week_start_date: string
+  template_id: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  template?: WeeklyMenuTemplate
+  meals?: WeeklyMealPlanMeal[]
+}
+
+export interface WeeklyMealPlanMeal {
+  id: string
+  weekly_meal_plan_id: string
+  day_of_week: DayOfWeek
+  meal_type: MealType
+  headcount_eats_all: number
+  headcount_vegetarian: number
+  headcount_vegan: number
+  prep_day_offset: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+  recipes?: WeeklyMealPlanRecipe[]
+}
+
+export interface WeeklyMealPlanRecipe {
+  id: string
+  meal_plan_meal_id: string
+  recipe_id: string
+  recipe_role: RecipeRole
+  serving_target: ServingTarget
+  order_index: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+  recipe?: Recipe
+}
+
+export interface DietHeadcount {
+  eats_all: number
+  vegetarian: number
+  vegan: number
+  total: number
+}
