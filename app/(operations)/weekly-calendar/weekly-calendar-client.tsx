@@ -90,7 +90,7 @@ export function WeeklyCalendarClient({ initialPlans, templates, recipes }: Weekl
   
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none')
   const [planToDelete, setPlanToDelete] = useState<WeeklyMealPlan | null>(null)
   const [refreshingPlanId, setRefreshingPlanId] = useState<string | null>(null)
 
@@ -148,7 +148,7 @@ export function WeeklyCalendarClient({ initialPlans, templates, recipes }: Weekl
   // Create a new plan
   const handleCreatePlan = (weekStart: Date) => {
     setCurrentDate(weekStart)
-    setSelectedTemplateId('')
+    setSelectedTemplateId('none')
     setShowCreateDialog(true)
   }
 
@@ -158,7 +158,7 @@ export function WeeklyCalendarClient({ initialPlans, templates, recipes }: Weekl
     startTransition(async () => {
       const result = await createWeeklyMealPlanAction(
         weekStr, 
-        selectedTemplateId || null
+        selectedTemplateId && selectedTemplateId !== 'none' ? selectedTemplateId : null
       )
       
       if (result.success && result.plan) {
@@ -386,7 +386,7 @@ export function WeeklyCalendarClient({ initialPlans, templates, recipes }: Weekl
                   <SelectValue placeholder="No template - start empty" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No template - start empty</SelectItem>
+                  <SelectItem value="none">No template - start empty</SelectItem>
                   {templates.map((template) => (
                     <SelectItem key={template.id} value={template.id}>
                       {template.name}
