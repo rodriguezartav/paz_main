@@ -203,7 +203,7 @@ export function DashboardClient({
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="secondary" className="text-xs">
-                            {diets.total} people
+                            {diets.total} <Users className="h-3 w-3 mr-1" />
                           </Badge>
                           {diets.eatsAll > 0 && (
                             <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
