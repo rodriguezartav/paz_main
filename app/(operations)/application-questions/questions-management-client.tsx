@@ -67,9 +67,8 @@ const defaultQuestion: Partial<ApplicationQuestion> = {
 
 export function QuestionsManagementClient({ sections: initialSections }: QuestionsManagementClientProps) {
   const router = useRouter()
-  const [sections, setSections] = useState(initialSections)
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(sections.map(s => s.key)))
-  const [selectedSection, setSelectedSection] = useState<string | null>(sections[0]?.key || null)
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(initialSections.map(s => s.key)))
+  const [selectedSection, setSelectedSection] = useState<string | null>(initialSections[0]?.key || null)
   
   // Dialog states
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -96,7 +95,7 @@ export function QuestionsManagementClient({ sections: initialSections }: Questio
   }
 
   const handleAddQuestion = (sectionKey: string, sectionTitle: string) => {
-    const section = sections.find(s => s.key === sectionKey)
+    const section = initialSections.find(s => s.key === sectionKey)
     const maxOrder = Math.max(0, ...(section?.questions.map(q => q.order_index) || []))
     
     setEditingQuestion({
@@ -174,7 +173,7 @@ export function QuestionsManagementClient({ sections: initialSections }: Questio
     })
   }
 
-  const currentSection = sections.find(s => s.key === selectedSection)
+  const currentSection = initialSections.find(s => s.key === selectedSection)
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col md:flex-row">
@@ -193,7 +192,7 @@ export function QuestionsManagementClient({ sections: initialSections }: Questio
           </Button>
         </div>
         <div className="max-h-[200px] overflow-y-auto p-2 md:max-h-none">
-          {sections.map(section => (
+          {initialSections.map(section => (
             <button
               key={section.key}
               onClick={() => setSelectedSection(section.key)}
@@ -487,7 +486,7 @@ export function QuestionsManagementClient({ sections: initialSections }: Questio
           </DialogHeader>
           
           <div className="space-y-6 py-4">
-            {sections.map(section => (
+            {initialSections.map(section => (
               <Card key={section.key}>
                 <CardHeader>
                   <CardTitle className="text-lg">{section.title}</CardTitle>
