@@ -26,8 +26,10 @@ export interface Resident {
   media_release_accepted: boolean
   orientation_completed: boolean
   notes: string | null
+  application_id: string | null
   created_at: string
   updated_at: string
+  application?: Application
 }
 
 export interface Payment {

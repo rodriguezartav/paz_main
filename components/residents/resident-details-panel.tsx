@@ -6,18 +6,20 @@ import { DietBadge } from './diet-badge'
 import { StatusBadge } from './status-badge'
 import { PaymentStatusBadge } from './payment-status-badge'
 import { BalanceDueBadge } from './balance-due-badge'
-import type { Resident, Payment } from '@/lib/types'
+import type { Resident, Payment, Application } from '@/lib/types'
+import Link from 'next/link'
 import { calculateNights } from '@/lib/utils/date'
 import { 
   User, Mail, Phone, AlertTriangle, 
   Calendar, MapPin, FileText, 
   CheckCircle2, XCircle, CreditCard,
-  DoorOpen, Edit
+  DoorOpen, Edit, ExternalLink
 } from 'lucide-react'
 
 interface ResidentDetailsPanelProps {
   resident: Resident
   payment?: Payment | null
+  application?: Application | null
 }
 
 function formatDate(dateString: string): string {
@@ -33,7 +35,7 @@ function formatCurrency(amount: number, currency: string): string {
   return `$${amount.toLocaleString()}`
 }
 
-export function ResidentDetailsPanel({ resident, payment }: ResidentDetailsPanelProps) {
+export function ResidentDetailsPanel({ resident, payment, application }: ResidentDetailsPanelProps) {
   const nights = calculateNights(resident.arrival_date, resident.departure_date)
 
   return (
@@ -202,6 +204,32 @@ export function ResidentDetailsPanel({ resident, payment }: ResidentDetailsPanel
           </Card>
         )}
       </div>
+
+      {/* Application Link */}
+        {application && (
+          <Card className="border-border bg-card">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">Application</CardTitle>
+              <Link href={`/applications/${application.id}`}>
+                <Button variant="outline" size="sm">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  View Application
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                <p>Submitted: {application.submitted_at ? formatDate(application.submitted_at) : '-'}</p>
+                {application.internal_score && (
+                  <p className="mt-1">Score: {application.internal_score}/5</p>
+                )}
+                {application.reviewer_notes && (
+                  <p className="mt-2 rounded-lg bg-muted/50 p-2">{application.reviewer_notes}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Admin Actions */}
       <Card className="border-border bg-card">
