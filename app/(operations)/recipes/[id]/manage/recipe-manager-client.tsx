@@ -121,7 +121,7 @@ export function RecipeManagerClient({ recipe, allIngredients, allRecipes }: Reci
   const updateAmount = (ingredientId: string, delta: number) => {
     setSelectedIngredients(prev => prev.map(si => {
       if (si.ingredient_id !== ingredientId) return si
-      const newAmount = Math.max(0.5, si.amount + delta)
+      const newAmount = Math.max(0.01, si.amount + delta)
       return { ...si, amount: newAmount }
     }))
     setHasChanges(true)
@@ -271,7 +271,7 @@ export function RecipeManagerClient({ recipe, allIngredients, allRecipes }: Reci
                             value={si.amount}
                             onChange={(e) => setAmount(si.ingredient_id, parseFloat(e.target.value) || 0.5)}
                             className="w-16 h-8 text-center px-1"
-                            step="0.1"
+                            step="0.05"
                             min="0.01"
                           />
                           <span className="text-sm text-muted-foreground w-10">
