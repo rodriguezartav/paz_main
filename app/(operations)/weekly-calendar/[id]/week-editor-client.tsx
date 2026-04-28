@@ -228,13 +228,10 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
     })
   }
 
-  // Filter recipes by meal type and recipe type
-  const getFilteredRecipes = (mealType: MealType): Recipe[] => {
-    return recipes.filter(r => {
-      const matchesMealType = r.meal_type === mealType
-      const matchesRecipeType = recipeTypeFilter === 'all' || r.type === recipeTypeFilter
-      return matchesMealType && matchesRecipeType
-    })
+  // Filter recipes by recipe type only
+  const getFilteredRecipes = (): Recipe[] => {
+    if (recipeTypeFilter === 'all') return recipes
+    return recipes.filter(r => r.type === recipeTypeFilter)
   }
 
   return (
@@ -483,7 +480,7 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
                   <SelectValue placeholder="Select a recipe" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
-                  {addingRecipeToMeal && getFilteredRecipes(addingRecipeToMeal.meal_type).map((recipe) => (
+                  {getFilteredRecipes().map((recipe) => (
                     <SelectItem key={recipe.id} value={recipe.id}>
                       <div className="flex items-center gap-2">
                         <ChefHat className="h-3.5 w-3.5" />
