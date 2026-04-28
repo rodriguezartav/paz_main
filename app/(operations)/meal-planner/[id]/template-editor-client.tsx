@@ -380,7 +380,7 @@ export function TemplateEditorClient({ template: initialTemplate, recipes }: Tem
 
       {/* Add Recipe Sheet */}
       <Sheet open={isAddRecipeOpen} onOpenChange={setIsAddRecipeOpen}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto ">
           <SheetHeader>
             <SheetTitle>Add Recipe</SheetTitle>
             <SheetDescription>
@@ -388,7 +388,7 @@ export function TemplateEditorClient({ template: initialTemplate, recipes }: Tem
             </SheetDescription>
           </SheetHeader>
           
-          <div className="space-y-6 py-6">
+          <div className="space-y-6 py-6 px-3">
             {/* Search */}
             <div className="space-y-2">
               <Label>Search Recipes</Label>
