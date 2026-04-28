@@ -48,8 +48,8 @@ export async function createSession(user: User): Promise<void> {
   
   cookieStore.set(SESSION_COOKIE, sessionValue, {
     httpOnly: true,
-    secure: false, // Allow both HTTP and HTTPS for v0 preview
-    sameSite: 'lax',
+    secure: true,
+    sameSite: 'none', // Required for cross-site cookies in v0 preview
     maxAge: SESSION_MAX_AGE,
     path: '/',
   })
