@@ -1,6 +1,6 @@
 'use server'
 
-import { deleteResident, updateResident } from '@/lib/db/queries'
+import { deleteResident, updateResident, assignResidentToBed } from '@/lib/db/queries'
 import { revalidatePath } from 'next/cache'
 
 export async function deleteResidentAction(id: string) {
@@ -35,4 +35,12 @@ export async function updateResidentChecklistAction(
 ) {
   await updateResident(id, { [field]: value })
   revalidatePath(`/residents/${id}`)
+}
+
+export async function assignBedToResidentAction(residentId: string, bedId: string) {
+  await assignResidentToBed(residentId, bedId)
+  revalidatePath('/residents')
+  revalidatePath(`/residents/${residentId}`)
+  revalidatePath('/rooms')
+  revalidatePath('/dashboard')
 }

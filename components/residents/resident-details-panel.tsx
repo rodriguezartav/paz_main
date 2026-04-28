@@ -7,7 +7,17 @@ import { DietBadge } from './diet-badge'
 import { StatusBadge } from './status-badge'
 import { PaymentStatusBadge } from './payment-status-badge'
 import { BalanceDueBadge } from './balance-due-badge'
-import type { Resident, Payment, Application } from '@/lib/types'
+import type { Resident, Payment, Application, Room } from '@/lib/types'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { calculateNights } from '@/lib/utils/date'
 import { 
@@ -17,12 +27,13 @@ import {
   DoorOpen, Edit, ExternalLink, AlertCircle, Loader2
 } from 'lucide-react'
 import type { ApplicationAnswer } from '@/lib/types'
-import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction } from '@/app/(operations)/residents/actions'
+import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction, assignBedToResidentAction } from '@/app/(operations)/residents/actions'
 
 interface ResidentDetailsPanelProps {
   resident: Resident
   payment?: Payment | null
   application?: Application | null
+  rooms?: Room[]
 }
 
 function formatDate(dateString: string): string {
@@ -118,9 +129,11 @@ function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
   return { green: [...new Set(green)], yellow: [...new Set(yellow)], red: [...new Set(red)] }
 }
 
-export function ResidentDetailsPanel({ resident, payment, application }: ResidentDetailsPanelProps) {
+export function ResidentDetailsPanel({ resident, payment, application, rooms = [] }: ResidentDetailsPanelProps) {
   const nights = calculateNights(resident.arrival_date, resident.departure_date)
   const [isPending, startTransition] = useTransition()
+  const [showBedDialog, setShowBedDialog] = useState(false)
+  const [selectedBedId, setSelectedBedId] = useState('')
 
   const handleCheckIn = () => {
     startTransition(async () => {
@@ -139,6 +152,26 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
       await updateResidentChecklistAction(resident.id, field, !currentValue)
     })
   }
+
+  const handleAssignBed = () => {
+    if (!selectedBedId) return
+    startTransition(async () => {
+      await assignBedToResidentAction(resident.id, selectedBedId)
+      setShowBedDialog(false)
+      setSelectedBedId('')
+    })
+  }
+
+  // Get available beds (beds without active assignments)
+  const availableBeds = rooms.flatMap(room => 
+    (room.beds || [])
+      .filter(bed => !bed.current_assignment)
+      .map(bed => ({
+        ...bed,
+        roomName: room.name,
+        buildingName: room.building?.name
+      }))
+  )
 
   return (
     <div className="space-y-6">
@@ -437,7 +470,7 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
               )}
               {resident.check_in_completed ? 'Already Checked In' : 'Mark Checked In'}
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => setShowBedDialog(true)}>
               <MapPin className="mr-2 h-4 w-4" />
               Assign Room / Bed
             </Button>
@@ -464,6 +497,57 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
           </div>
         </CardContent>
       </Card>
+
+      {/* Assign Bed Dialog */}
+      <Dialog open={showBedDialog} onOpenChange={setShowBedDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Room / Bed</DialogTitle>
+            <DialogDescription>
+              Select a bed to assign to {resident.name}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Available Beds</Label>
+              <Select value={selectedBedId} onValueChange={setSelectedBedId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a bed" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableBeds.length === 0 ? (
+                    <SelectItem value="none" disabled>No available beds</SelectItem>
+                  ) : (
+                    availableBeds.map((bed) => (
+                      <SelectItem key={bed.id} value={bed.id}>
+                        {bed.buildingName && `${bed.buildingName} - `}{bed.roomName} - {bed.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBedDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAssignBed}
+              disabled={!selectedBedId || isPending}
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <MapPin className="mr-2 h-4 w-4" />
+              )}
+              Assign Bed
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
