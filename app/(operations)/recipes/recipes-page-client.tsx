@@ -17,12 +17,12 @@ interface RecipesPageClientProps {
 
 export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageClientProps) {
   const router = useRouter()
-  const [recipes] = useState<Recipe[]>(initialRecipes)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null)
   const [viewingRecipe, setViewingRecipe] = useState<Recipe | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [formKey, setFormKey] = useState(0) // Key to force form reset
 
   const handleView = (recipe: Recipe) => {
     setViewingRecipe(recipe)
@@ -64,6 +64,7 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
       }
       setEditingRecipe(null)
       setIsFormOpen(false)
+      setFormKey(prev => prev + 1) // Force form to reset
       router.refresh()
     } catch (error) {
       console.error('Failed to save recipe:', error)
@@ -86,7 +87,7 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {recipes.map((recipe) => (
+        {initialRecipes.map((recipe) => (
           <RecipeCard 
             key={recipe.id} 
             recipe={recipe}
@@ -97,6 +98,7 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
       </div>
 
       <RecipeForm
+        key={formKey}
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         recipe={editingRecipe}
