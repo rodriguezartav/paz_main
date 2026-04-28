@@ -1493,6 +1493,9 @@ export async function createWeeklyMealPlan(
     const headcount = defaultHeadcounts.get(dateStr) || { eats_all: 0, vegetarian: 0, vegan: 0, total: 0 }
     
     for (const mealType of mealTypes) {
+      // Monday brunch should be prepped 2 days before (Saturday)
+      const prepDayOffset = (days[i] === 'monday' && mealType === 'brunch') ? 2 : 0
+      
       meals.push({
         weekly_meal_plan_id: plan.id,
         day_of_week: days[i],
@@ -1500,7 +1503,7 @@ export async function createWeeklyMealPlan(
         headcount_eats_all: headcount.eats_all,
         headcount_vegetarian: headcount.vegetarian,
         headcount_vegan: headcount.vegan,
-        prep_day_offset: 0
+        prep_day_offset: prepDayOffset
       })
     }
   }
