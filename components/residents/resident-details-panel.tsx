@@ -133,7 +133,27 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
   const nights = calculateNights(resident.arrival_date, resident.departure_date)
   const [isPending, startTransition] = useTransition()
   const [showBedDialog, setShowBedDialog] = useState(false)
+  const [selectedBuildingId, setSelectedBuildingId] = useState('')
+  const [selectedRoomId, setSelectedRoomId] = useState('')
   const [selectedBedId, setSelectedBedId] = useState('')
+  
+  // Get unique buildings from rooms
+  const buildings = rooms.reduce((acc, room) => {
+    if (room.building && !acc.find(b => b.id === room.building!.id)) {
+      acc.push(room.building)
+    }
+    return acc
+  }, [] as { id: string; name: string }[])
+  
+  // Get rooms in selected building
+  const roomsInBuilding = selectedBuildingId 
+    ? rooms.filter(r => r.building?.id === selectedBuildingId)
+    : []
+  
+  // Get available beds in selected room (beds without active assignments)
+  const bedsInRoom = selectedRoomId
+    ? (rooms.find(r => r.id === selectedRoomId)?.beds || []).filter(bed => !bed.current_assignment)
+    : []
 
   const handleCheckIn = () => {
     startTransition(async () => {
@@ -158,20 +178,22 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
     startTransition(async () => {
       await assignBedToResidentAction(resident.id, selectedBedId)
       setShowBedDialog(false)
+      setSelectedBuildingId('')
+      setSelectedRoomId('')
       setSelectedBedId('')
     })
   }
-
-  // Get available beds (beds without active assignments)
-  const availableBeds = rooms.flatMap(room => 
-    (room.beds || [])
-      .filter(bed => !bed.current_assignment)
-      .map(bed => ({
-        ...bed,
-        roomName: room.name,
-        buildingName: room.building?.name
-      }))
-  )
+  
+  const handleBuildingChange = (buildingId: string) => {
+    setSelectedBuildingId(buildingId)
+    setSelectedRoomId('')
+    setSelectedBedId('')
+  }
+  
+  const handleRoomChange = (roomId: string) => {
+    setSelectedRoomId(roomId)
+    setSelectedBedId('')
+  }
 
   return (
     <div className="space-y-6">
@@ -499,29 +521,87 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
       </Card>
 
       {/* Assign Bed Dialog */}
-      <Dialog open={showBedDialog} onOpenChange={setShowBedDialog}>
+      <Dialog open={showBedDialog} onOpenChange={(open) => {
+        setShowBedDialog(open)
+        if (!open) {
+          setSelectedBuildingId('')
+          setSelectedRoomId('')
+          setSelectedBedId('')
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Assign Room / Bed</DialogTitle>
             <DialogDescription>
-              Select a bed to assign to {resident.name}.
+              Select a building, room, and bed to assign to {resident.name}.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            {/* Building Select */}
             <div className="space-y-2">
-              <Label>Available Beds</Label>
-              <Select value={selectedBedId} onValueChange={setSelectedBedId}>
+              <Label>Building</Label>
+              <Select value={selectedBuildingId} onValueChange={handleBuildingChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a bed" />
+                  <SelectValue placeholder="Select a building" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableBeds.length === 0 ? (
-                    <SelectItem value="none" disabled>No available beds</SelectItem>
+                  {buildings.length === 0 ? (
+                    <SelectItem value="none" disabled>No buildings available</SelectItem>
                   ) : (
-                    availableBeds.map((bed) => (
+                    buildings.map((building) => (
+                      <SelectItem key={building.id} value={building.id}>
+                        {building.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Room Select */}
+            <div className="space-y-2">
+              <Label>Room</Label>
+              <Select 
+                value={selectedRoomId} 
+                onValueChange={handleRoomChange}
+                disabled={!selectedBuildingId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={selectedBuildingId ? "Select a room" : "Select a building first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {roomsInBuilding.length === 0 ? (
+                    <SelectItem value="none" disabled>No rooms in this building</SelectItem>
+                  ) : (
+                    roomsInBuilding.map((room) => (
+                      <SelectItem key={room.id} value={room.id}>
+                        {room.name} {room.is_private && '(Private)'}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Bed Select */}
+            <div className="space-y-2">
+              <Label>Bed</Label>
+              <Select 
+                value={selectedBedId} 
+                onValueChange={setSelectedBedId}
+                disabled={!selectedRoomId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={selectedRoomId ? "Select a bed" : "Select a room first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {bedsInRoom.length === 0 ? (
+                    <SelectItem value="none" disabled>No available beds in this room</SelectItem>
+                  ) : (
+                    bedsInRoom.map((bed) => (
                       <SelectItem key={bed.id} value={bed.id}>
-                        {bed.buildingName && `${bed.buildingName} - `}{bed.roomName} - {bed.name}
+                        {bed.name}
                       </SelectItem>
                     ))
                   )}
