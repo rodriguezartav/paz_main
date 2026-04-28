@@ -18,9 +18,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import type { Application, ApplicationStatus } from '@/lib/types'
-import { updateApplicationStatus, updateApplicationScore, deleteApplicationAction } from './actions'
-import { Search, Eye, Star, Trash2, Calendar, Phone, Mail, Clock } from 'lucide-react'
+import { updateApplicationStatus, updateApplicationScore, deleteApplicationAction, acceptApplicationAndCreateResident } from './actions'
+import { Search, Eye, Star, Trash2, Calendar, Phone, Mail, Clock, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ApplicationsListClientProps {
