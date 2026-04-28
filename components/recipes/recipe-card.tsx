@@ -33,7 +33,12 @@ export function RecipeCard({ recipe, onView, onEdit }: RecipeCardProps) {
             </div>
             <div>
               <CardTitle className="text-lg text-card-foreground">{recipe.name}</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{recipe.description}</p>
+              {recipe.english_name && (
+                <p className="text-sm text-muted-foreground">{recipe.english_name}</p>
+              )}
+              {recipe.description && (
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{recipe.description}</p>
+              )}
             </div>
           </div>
         </div>

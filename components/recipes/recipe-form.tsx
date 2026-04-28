@@ -17,6 +17,7 @@ interface RecipeFormProps {
   ingredients: Ingredient[]
   onSave: (recipe: { 
     name: string
+    english_name: string | null
     description: string | null
     notes: string | null
     id?: string
@@ -34,6 +35,7 @@ interface RecipeIngredientInput {
 
 export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, isLoading }: RecipeFormProps) {
   const [name, setName] = useState('')
+  const [englishName, setEnglishName] = useState('')
   const [description, setDescription] = useState('')
   const [notes, setNotes] = useState('')
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredientInput[]>([])
@@ -43,6 +45,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
   useEffect(() => {
     if (recipe) {
       setName(recipe.name)
+      setEnglishName(recipe.english_name || '')
       setDescription(recipe.description || '')
       setNotes(recipe.notes || '')
       setRecipeIngredients(
@@ -55,6 +58,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
       )
     } else {
       setName('')
+      setEnglishName('')
       setDescription('')
       setNotes('')
       setRecipeIngredients([])
@@ -97,6 +101,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
     onSave({
       id: recipe?.id,
       name,
+      english_name: englishName || null,
       description: description || null,
       notes: notes || null,
       recipe_ingredients: ingredientData
@@ -119,8 +124,17 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Rice and Beans"
+                placeholder="e.g., Gallo Pinto"
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="english_name">English Name</Label>
+              <Input
+                id="english_name"
+                value={englishName}
+                onChange={(e) => setEnglishName(e.target.value)}
+                placeholder="e.g., Rice and Beans"
               />
             </div>
             <div className="space-y-2">

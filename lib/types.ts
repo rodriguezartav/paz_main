@@ -77,6 +77,7 @@ export interface RecipeIngredient {
 export interface Recipe {
   id: string
   name: string
+  english_name: string | null
   description: string | null
   notes: string | null
   meal_type: MealType
