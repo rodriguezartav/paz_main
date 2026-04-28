@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useTransition } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { DietBadge } from './diet-badge'
@@ -13,9 +14,10 @@ import {
   User, Mail, Phone, AlertTriangle, 
   Calendar, MapPin, FileText, 
   CheckCircle2, XCircle, CreditCard,
-  DoorOpen, Edit, ExternalLink, AlertCircle
+  DoorOpen, Edit, ExternalLink, AlertCircle, Loader2
 } from 'lucide-react'
 import type { ApplicationAnswer } from '@/lib/types'
+import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction } from '@/app/(operations)/residents/actions'
 
 interface ResidentDetailsPanelProps {
   resident: Resident
@@ -118,6 +120,25 @@ function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
 
 export function ResidentDetailsPanel({ resident, payment, application }: ResidentDetailsPanelProps) {
   const nights = calculateNights(resident.arrival_date, resident.departure_date)
+  const [isPending, startTransition] = useTransition()
+
+  const handleCheckIn = () => {
+    startTransition(async () => {
+      await markResidentCheckedInAction(resident.id)
+    })
+  }
+
+  const handleCheckOut = () => {
+    startTransition(async () => {
+      await markResidentCheckedOutAction(resident.id)
+    })
+  }
+
+  const handleChecklistToggle = (field: 'release_accepted' | 'health_insurance_confirmed' | 'media_release_accepted' | 'orientation_completed', currentValue: boolean) => {
+    startTransition(async () => {
+      await updateResidentChecklistAction(resident.id, field, !currentValue)
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -239,11 +260,31 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
             <CardTitle className="text-lg">Check-In</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <CheckItem label="Check-in completed" checked={resident.check_in_completed} />
-            <CheckItem label="Release accepted" checked={resident.release_accepted} />
-            <CheckItem label="Health insurance confirmed" checked={resident.health_insurance_confirmed} />
-            <CheckItem label="Media release accepted" checked={resident.media_release_accepted} />
-            <CheckItem label="Orientation completed" checked={resident.orientation_completed} />
+            <CheckItem label="Check-in completed" checked={resident.check_in_completed} disabled />
+            <CheckItem 
+              label="Release accepted" 
+              checked={resident.release_accepted} 
+              onClick={() => handleChecklistToggle('release_accepted', resident.release_accepted)}
+              disabled={isPending}
+            />
+            <CheckItem 
+              label="Health insurance confirmed" 
+              checked={resident.health_insurance_confirmed} 
+              onClick={() => handleChecklistToggle('health_insurance_confirmed', resident.health_insurance_confirmed)}
+              disabled={isPending}
+            />
+            <CheckItem 
+              label="Media release accepted" 
+              checked={resident.media_release_accepted} 
+              onClick={() => handleChecklistToggle('media_release_accepted', resident.media_release_accepted)}
+              disabled={isPending}
+            />
+            <CheckItem 
+              label="Orientation completed" 
+              checked={resident.orientation_completed} 
+              onClick={() => handleChecklistToggle('orientation_completed', resident.orientation_completed)}
+              disabled={isPending}
+            />
           </CardContent>
         </Card>
 
@@ -384,9 +425,17 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline">
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Mark Checked In
+            <Button 
+              variant="outline" 
+              onClick={handleCheckIn}
+              disabled={isPending || resident.check_in_completed || resident.status === 'checked_out'}
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+              )}
+              {resident.check_in_completed ? 'Already Checked In' : 'Mark Checked In'}
             </Button>
             <Button variant="outline">
               <MapPin className="mr-2 h-4 w-4" />
@@ -400,9 +449,17 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
               <CreditCard className="mr-2 h-4 w-4" />
               Update Payment
             </Button>
-            <Button variant="outline">
-              <DoorOpen className="mr-2 h-4 w-4" />
-              Mark Checked Out
+            <Button 
+              variant="outline" 
+              onClick={handleCheckOut}
+              disabled={isPending || resident.status === 'checked_out'}
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <DoorOpen className="mr-2 h-4 w-4" />
+              )}
+              {resident.status === 'checked_out' ? 'Already Checked Out' : 'Mark Checked Out'}
             </Button>
           </div>
         </CardContent>
@@ -411,16 +468,25 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
   )
 }
 
-function CheckItem({ label, checked }: { label: string; checked: boolean }) {
+function CheckItem({ label, checked, onClick, disabled }: { label: string; checked: boolean; onClick?: () => void; disabled?: boolean }) {
+  const isClickable = onClick && !disabled
+  
   return (
-    <div className="flex items-center gap-3">
+    <button
+      type="button"
+      className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors ${
+        isClickable ? 'hover:bg-muted/50 cursor-pointer' : 'cursor-default'
+      } ${disabled ? 'opacity-50' : ''}`}
+      onClick={isClickable ? onClick : undefined}
+      disabled={disabled || !onClick}
+    >
       {checked ? (
         <CheckCircle2 className="h-5 w-5 text-paz-green" />
       ) : (
         <XCircle className="h-5 w-5 text-muted-foreground" />
       )}
       <span className={checked ? 'text-card-foreground' : 'text-muted-foreground'}>{label}</span>
-    </div>
+    </button>
   )
 }
 
