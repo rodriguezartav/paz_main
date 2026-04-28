@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar } from 'lucide-react'
+import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar, KeyRound, LogOut } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { logout } from '@/app/login/actions'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 
@@ -32,6 +34,7 @@ const navSections = [
       { href: '/apply', label: 'Apply', icon: ClipboardList },
       { href: '/applications', label: 'Applications', icon: FileText },
       { href: '/application-questions', label: 'Questions', icon: Settings },
+      { href: '/users', label: 'Users', icon: KeyRound },
     ],
   },
   {
@@ -51,6 +54,13 @@ interface SidebarNavProps {
 
 export function SidebarNav({ activeSection, onSectionChange }: SidebarNavProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  
+  const handleLogout = async () => {
+    await logout()
+    router.push('/login')
+    router.refresh()
+  }
 
   return (
     <aside className="hidden w-64 border-r border-border bg-sidebar md:block">
@@ -120,8 +130,15 @@ export function SidebarNav({ activeSection, onSectionChange }: SidebarNavProps) 
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-border p-4">
-          <p className="text-xs text-muted-foreground">
+        <div className="border-t border-border p-4 space-y-3">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"
+          >
+            <LogOut className="h-5 w-5" />
+            Logout
+          </button>
+          <p className="text-xs text-muted-foreground px-4">
             Off-grid rainforest living
           </p>
         </div>

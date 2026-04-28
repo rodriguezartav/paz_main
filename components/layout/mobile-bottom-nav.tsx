@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, X, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar } from 'lucide-react'
+import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, X, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar, KeyRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navSections = [
@@ -35,6 +35,7 @@ const navSections = [
       { href: '/apply', label: 'Apply', icon: ClipboardList },
       { href: '/applications', label: 'Applications', icon: FileText },
       { href: '/application-questions', label: 'Questions', icon: Settings },
+      { href: '/users', label: 'Users', icon: KeyRound },
     ],
   },
   {
