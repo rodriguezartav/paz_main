@@ -248,14 +248,32 @@ export async function updateRecipe(
 ): Promise<Recipe> {
   const supabase = await createClient()
   
-  const { data: updatedRecipe, error: recipeError } = await supabase
-    .from('recipes')
-    .update(recipe)
-    .eq('id', id)
-    .select()
-    .single()
+  let updatedRecipe: Recipe
   
-  if (recipeError) throw recipeError
+  // Only update recipe fields if there are fields to update
+  const hasRecipeFields = Object.keys(recipe).length > 0
+  
+  if (hasRecipeFields) {
+    const { data, error: recipeError } = await supabase
+      .from('recipes')
+      .update(recipe)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (recipeError) throw recipeError
+    updatedRecipe = data
+  } else {
+    // Just fetch the current recipe if no fields to update
+    const { data, error: fetchError } = await supabase
+      .from('recipes')
+      .select()
+      .eq('id', id)
+      .single()
+    
+    if (fetchError) throw fetchError
+    updatedRecipe = data
+  }
   
   if (ingredients !== undefined) {
     // Delete existing ingredients
