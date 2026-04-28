@@ -1,26 +1,39 @@
 'use client'
 
+import { useState, useTransition } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { DietBadge } from './diet-badge'
 import { StatusBadge } from './status-badge'
 import { PaymentStatusBadge } from './payment-status-badge'
 import { BalanceDueBadge } from './balance-due-badge'
-import type { Resident, Payment, Application } from '@/lib/types'
+import type { Resident, Payment, Application, Room } from '@/lib/types'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { calculateNights } from '@/lib/utils/date'
 import { 
   User, Mail, Phone, AlertTriangle, 
   Calendar, MapPin, FileText, 
   CheckCircle2, XCircle, CreditCard,
-  DoorOpen, Edit, ExternalLink, AlertCircle
+  DoorOpen, Edit, ExternalLink, AlertCircle, Loader2
 } from 'lucide-react'
 import type { ApplicationAnswer } from '@/lib/types'
+import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction, assignBedToResidentAction } from '@/app/(operations)/residents/actions'
 
 interface ResidentDetailsPanelProps {
   resident: Resident
   payment?: Payment | null
   application?: Application | null
+  rooms?: Room[]
 }
 
 function formatDate(dateString: string): string {
@@ -116,8 +129,71 @@ function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
   return { green: [...new Set(green)], yellow: [...new Set(yellow)], red: [...new Set(red)] }
 }
 
-export function ResidentDetailsPanel({ resident, payment, application }: ResidentDetailsPanelProps) {
+export function ResidentDetailsPanel({ resident, payment, application, rooms = [] }: ResidentDetailsPanelProps) {
   const nights = calculateNights(resident.arrival_date, resident.departure_date)
+  const [isPending, startTransition] = useTransition()
+  const [showBedDialog, setShowBedDialog] = useState(false)
+  const [selectedBuildingId, setSelectedBuildingId] = useState('')
+  const [selectedRoomId, setSelectedRoomId] = useState('')
+  const [selectedBedId, setSelectedBedId] = useState('')
+  
+  // Get unique buildings from rooms
+  const buildings = rooms.reduce((acc, room) => {
+    if (room.building && !acc.find(b => b.id === room.building!.id)) {
+      acc.push(room.building)
+    }
+    return acc
+  }, [] as { id: string; name: string }[])
+  
+  // Get rooms in selected building
+  const roomsInBuilding = selectedBuildingId 
+    ? rooms.filter(r => r.building?.id === selectedBuildingId)
+    : []
+  
+  // Get available beds in selected room (beds without active assignments)
+  const bedsInRoom = selectedRoomId
+    ? (rooms.find(r => r.id === selectedRoomId)?.beds || []).filter(bed => !bed.current_assignment)
+    : []
+
+  const handleCheckIn = () => {
+    startTransition(async () => {
+      await markResidentCheckedInAction(resident.id)
+    })
+  }
+
+  const handleCheckOut = () => {
+    startTransition(async () => {
+      await markResidentCheckedOutAction(resident.id)
+    })
+  }
+
+  const handleChecklistToggle = (field: 'release_accepted' | 'health_insurance_confirmed' | 'media_release_accepted' | 'orientation_completed', currentValue: boolean) => {
+    startTransition(async () => {
+      await updateResidentChecklistAction(resident.id, field, !currentValue)
+    })
+  }
+
+  const handleAssignBed = () => {
+    if (!selectedBedId) return
+    startTransition(async () => {
+      await assignBedToResidentAction(resident.id, selectedBedId)
+      setShowBedDialog(false)
+      setSelectedBuildingId('')
+      setSelectedRoomId('')
+      setSelectedBedId('')
+    })
+  }
+  
+  const handleBuildingChange = (buildingId: string) => {
+    setSelectedBuildingId(buildingId)
+    setSelectedRoomId('')
+    setSelectedBedId('')
+  }
+  
+  const handleRoomChange = (roomId: string) => {
+    setSelectedRoomId(roomId)
+    setSelectedBedId('')
+  }
 
   return (
     <div className="space-y-6">
@@ -217,7 +293,14 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
                 <MapPin className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Room / Bed</p>
-                  <p className="text-card-foreground">{resident.room || '-'} / {resident.bed || '-'}</p>
+                  {resident.current_bed && resident.current_bed.length > 0 ? (
+                    <p className="text-card-foreground">
+                      {resident.current_bed[0].bed.room.building?.name && `${resident.current_bed[0].bed.room.building.name} - `}
+                      {resident.current_bed[0].bed.room.name} - {resident.current_bed[0].bed.name}
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground">Not assigned</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -239,11 +322,31 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
             <CardTitle className="text-lg">Check-In</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <CheckItem label="Check-in completed" checked={resident.check_in_completed} />
-            <CheckItem label="Release accepted" checked={resident.release_accepted} />
-            <CheckItem label="Health insurance confirmed" checked={resident.health_insurance_confirmed} />
-            <CheckItem label="Media release accepted" checked={resident.media_release_accepted} />
-            <CheckItem label="Orientation completed" checked={resident.orientation_completed} />
+            <CheckItem label="Check-in completed" checked={resident.check_in_completed} disabled />
+            <CheckItem 
+              label="Release accepted" 
+              checked={resident.release_accepted} 
+              onClick={() => handleChecklistToggle('release_accepted', resident.release_accepted)}
+              disabled={isPending}
+            />
+            <CheckItem 
+              label="Health insurance confirmed" 
+              checked={resident.health_insurance_confirmed} 
+              onClick={() => handleChecklistToggle('health_insurance_confirmed', resident.health_insurance_confirmed)}
+              disabled={isPending}
+            />
+            <CheckItem 
+              label="Media release accepted" 
+              checked={resident.media_release_accepted} 
+              onClick={() => handleChecklistToggle('media_release_accepted', resident.media_release_accepted)}
+              disabled={isPending}
+            />
+            <CheckItem 
+              label="Orientation completed" 
+              checked={resident.orientation_completed} 
+              onClick={() => handleChecklistToggle('orientation_completed', resident.orientation_completed)}
+              disabled={isPending}
+            />
           </CardContent>
         </Card>
 
@@ -384,11 +487,19 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline">
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Mark Checked In
+            <Button 
+              variant="outline" 
+              onClick={handleCheckIn}
+              disabled={isPending || resident.check_in_completed || resident.status === 'checked_out'}
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+              )}
+              {resident.check_in_completed ? 'Already Checked In' : 'Mark Checked In'}
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => setShowBedDialog(true)}>
               <MapPin className="mr-2 h-4 w-4" />
               Assign Room / Bed
             </Button>
@@ -400,27 +511,153 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
               <CreditCard className="mr-2 h-4 w-4" />
               Update Payment
             </Button>
-            <Button variant="outline">
-              <DoorOpen className="mr-2 h-4 w-4" />
-              Mark Checked Out
+            <Button 
+              variant="outline" 
+              onClick={handleCheckOut}
+              disabled={isPending || resident.status === 'checked_out'}
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <DoorOpen className="mr-2 h-4 w-4" />
+              )}
+              {resident.status === 'checked_out' ? 'Already Checked Out' : 'Mark Checked Out'}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Assign Bed Dialog */}
+      <Dialog open={showBedDialog} onOpenChange={(open) => {
+        setShowBedDialog(open)
+        if (!open) {
+          setSelectedBuildingId('')
+          setSelectedRoomId('')
+          setSelectedBedId('')
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Room / Bed</DialogTitle>
+            <DialogDescription>
+              Select a building, room, and bed to assign to {resident.name}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Building Select */}
+            <div className="space-y-2">
+              <Label>Building</Label>
+              <Select value={selectedBuildingId} onValueChange={handleBuildingChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a building" />
+                </SelectTrigger>
+                <SelectContent>
+                  {buildings.length === 0 ? (
+                    <SelectItem value="none" disabled>No buildings available</SelectItem>
+                  ) : (
+                    buildings.map((building) => (
+                      <SelectItem key={building.id} value={building.id}>
+                        {building.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Room Select */}
+            <div className="space-y-2">
+              <Label>Room</Label>
+              <Select 
+                value={selectedRoomId} 
+                onValueChange={handleRoomChange}
+                disabled={!selectedBuildingId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={selectedBuildingId ? "Select a room" : "Select a building first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {roomsInBuilding.length === 0 ? (
+                    <SelectItem value="none" disabled>No rooms in this building</SelectItem>
+                  ) : (
+                    roomsInBuilding.map((room) => (
+                      <SelectItem key={room.id} value={room.id}>
+                        {room.name} {room.is_private && '(Private)'}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Bed Select */}
+            <div className="space-y-2">
+              <Label>Bed</Label>
+              <Select 
+                value={selectedBedId} 
+                onValueChange={setSelectedBedId}
+                disabled={!selectedRoomId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={selectedRoomId ? "Select a bed" : "Select a room first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {bedsInRoom.length === 0 ? (
+                    <SelectItem value="none" disabled>No available beds in this room</SelectItem>
+                  ) : (
+                    bedsInRoom.map((bed) => (
+                      <SelectItem key={bed.id} value={bed.id}>
+                        {bed.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBedDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAssignBed}
+              disabled={!selectedBedId || isPending}
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <MapPin className="mr-2 h-4 w-4" />
+              )}
+              Assign Bed
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
-function CheckItem({ label, checked }: { label: string; checked: boolean }) {
+function CheckItem({ label, checked, onClick, disabled }: { label: string; checked: boolean; onClick?: () => void; disabled?: boolean }) {
+  const isClickable = onClick && !disabled
+  
   return (
-    <div className="flex items-center gap-3">
+    <button
+      type="button"
+      className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors ${
+        isClickable ? 'hover:bg-muted/50 cursor-pointer' : 'cursor-default'
+      } ${disabled ? 'opacity-50' : ''}`}
+      onClick={isClickable ? onClick : undefined}
+      disabled={disabled || !onClick}
+    >
       {checked ? (
         <CheckCircle2 className="h-5 w-5 text-paz-green" />
       ) : (
         <XCircle className="h-5 w-5 text-muted-foreground" />
       )}
       <span className={checked ? 'text-card-foreground' : 'text-muted-foreground'}>{label}</span>
-    </div>
+    </button>
   )
 }
 

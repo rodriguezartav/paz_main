@@ -30,6 +30,21 @@ export interface Resident {
   created_at: string
   updated_at: string
   application?: Application
+  current_bed?: {
+    id: string
+    bed: {
+      id: string
+      name: string
+      room: {
+        id: string
+        name: string
+        building: {
+          id: string
+          name: string
+        } | null
+      }
+    }
+  }[]
 }
 
 export interface Payment {
