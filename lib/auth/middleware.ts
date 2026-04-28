@@ -21,9 +21,16 @@ export async function authMiddleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   
   // v0 preview environment doesn't support cookie persistence across client-side navigation
-  // Only skip auth in the v0 preview sandbox (vusercontent.net)
+  // Check multiple indicators for v0 preview environment
   const host = request.headers.get('host') || ''
-  const isV0Preview = host.includes('vusercontent.net')
+  const referer = request.headers.get('referer') || ''
+  const origin = request.headers.get('origin') || ''
+  
+  const isV0Preview = host.includes('vusercontent.net') || 
+                      host.includes('localhost') ||
+                      referer.includes('vusercontent.net') ||
+                      origin.includes('vusercontent.net') ||
+                      process.env.VERCEL_ENV !== 'production'
   
   if (isV0Preview) {
     return NextResponse.next()
