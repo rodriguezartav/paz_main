@@ -423,7 +423,7 @@ export function TemplateEditorClient({ template: initialTemplate, recipes }: Tem
             {/* Recipe List */}
             <div className="space-y-2">
               <Label>Select Recipe</Label>
-              <div className="border rounded-lg max-h-48 overflow-y-auto">
+              <div className="border rounded-lg max-h-96 overflow-y-auto">
                 {filteredRecipes.length === 0 ? (
                   <p className="p-4 text-sm text-muted-foreground text-center">No recipes found</p>
                 ) : (
