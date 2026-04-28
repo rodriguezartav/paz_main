@@ -21,11 +21,11 @@ export async function authMiddleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   
   // v0 preview environment doesn't support cookie persistence across client-side navigation
-  // Skip auth check in preview - authentication will work correctly when deployed to production
+  // Only skip auth in the v0 preview sandbox (vusercontent.net)
   const host = request.headers.get('host') || ''
-  const isPreview = host.includes('vusercontent.net') || host.includes('localhost') || host.includes('vercel.app')
+  const isV0Preview = host.includes('vusercontent.net')
   
-  if (isPreview) {
+  if (isV0Preview) {
     return NextResponse.next()
   }
   
