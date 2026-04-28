@@ -411,11 +411,12 @@ export async function getRoomOccupancyForDateRange(startDate: string, endDate: s
 }> {
   const supabase = await createClient()
   
-  // Get all rooms with beds
+  // Get all rooms with beds and building
   const { data: rooms, error: roomsError } = await supabase
     .from('rooms')
     .select(`
       *,
+      building:buildings (*),
       beds (
         *,
         current_assignment:resident_beds (

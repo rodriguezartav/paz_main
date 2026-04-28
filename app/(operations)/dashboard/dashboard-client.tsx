@@ -496,7 +496,14 @@ export function DashboardClient({
                 return (
                   <div key={room.id} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{room.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{room.name}</span>
+                        {room.building && (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">
+                            {room.building.name}
+                          </Badge>
+                        )}
+                      </div>
                       <span className="text-muted-foreground">
                         {occupiedRoomBeds}/{totalRoomBeds} beds
                       </span>
