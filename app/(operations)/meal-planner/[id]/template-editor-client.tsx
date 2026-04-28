@@ -667,7 +667,7 @@ function MealCard({
               >
                 <ChefHat className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0 space-y-1">
-                  <p className="text-xs font-medium truncate">{recipe.recipe?.name}</p>
+                  <p className="text-xs font-medium">{recipe.recipe?.name}</p>
                   <div className="flex flex-wrap gap-1">
                     <Badge variant="outline" className={cn('text-[9px] px-1 py-0', getRoleColor(recipe.recipe_role))}>
                       {recipe.recipe_role.replace('_', ' ')}
