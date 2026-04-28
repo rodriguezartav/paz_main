@@ -21,16 +21,13 @@ export async function authMiddleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   
   // v0 preview environment doesn't support cookie persistence across client-side navigation
-  // Check multiple indicators for v0 preview environment
+  // Only bypass auth in v0 preview (vusercontent.net domains)
   const host = request.headers.get('host') || ''
   const referer = request.headers.get('referer') || ''
-  const origin = request.headers.get('origin') || ''
   
+  // Check if we're in v0 preview - be very specific to avoid bypassing auth in production
   const isV0Preview = host.includes('vusercontent.net') || 
-                      host.includes('localhost') ||
-                      referer.includes('vusercontent.net') ||
-                      origin.includes('vusercontent.net') ||
-                      process.env.VERCEL_ENV !== 'production'
+                      referer.includes('vusercontent.net')
   
   if (isV0Preview) {
     return NextResponse.next()
