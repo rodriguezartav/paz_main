@@ -1144,8 +1144,16 @@ export async function createWeeklyMenuTemplate(template: { name: string; descrip
   
   for (const day of DAYS_OF_WEEK) {
     for (const mealType of MEAL_TYPES) {
-      // Default prep_day_offset: -1 for Wednesday and Sunday (prepped day before)
-      const prepDayOffset = (day === 'wednesday' || day === 'sunday') ? -1 : 0
+      // Default prep_day_offset:
+      // - Monday brunch: -2 (prepped 2 days before, on Saturday)
+      // - Wednesday and Sunday: -1 (prepped day before)
+      // - All others: 0 (same day)
+      let prepDayOffset = 0
+      if (day === 'monday' && mealType === 'brunch') {
+        prepDayOffset = -2
+      } else if (day === 'wednesday' || day === 'sunday') {
+        prepDayOffset = -1
+      }
       
       meals.push({
         weekly_menu_template_id: templateData.id,
