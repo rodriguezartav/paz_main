@@ -531,6 +531,7 @@ export async function getRooms(): Promise<Room[]> {
     .from('rooms')
     .select(`
       *,
+      building:buildings (*),
       beds (
         *,
         current_assignment:resident_beds (
