@@ -42,7 +42,7 @@ import {
   ChevronDown,
   Edit2
 } from 'lucide-react'
-import type { WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, Recipe, DayOfWeek, RecipeRole, ServingTarget } from '@/lib/types'
+import type { WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, Recipe, DayOfWeek, RecipeRole, ServingTarget, RecipeType } from '@/lib/types'
 import { updateTemplateAction, updateMealAction, addRecipeToMealAction, updateMealRecipeAction, removeRecipeFromMealAction } from '../actions'
 import { cn } from '@/lib/utils'
 
@@ -82,6 +82,16 @@ const SERVING_TARGETS: { value: ServingTarget; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ]
 
+const RECIPE_TYPES: { value: RecipeType | 'all'; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'main', label: 'Main' },
+  { value: 'side', label: 'Side' },
+  { value: 'salad', label: 'Salad' },
+  { value: 'soup', label: 'Soup' },
+  { value: 'sauce', label: 'Sauce' },
+  { value: 'dessert', label: 'Dessert' },
+]
+
 export function TemplateEditorClient({ template: initialTemplate, recipes }: TemplateEditorClientProps) {
   const router = useRouter()
   const [template, setTemplate] = useState(initialTemplate)
@@ -97,7 +107,7 @@ export function TemplateEditorClient({ template: initialTemplate, recipes }: Tem
   const [recipeRole, setRecipeRole] = useState<RecipeRole>('main')
   const [servingTarget, setServingTarget] = useState<ServingTarget>('everyone')
   const [recipeNotes, setRecipeNotes] = useState('')
-  const [mealTypeFilter, setMealTypeFilter] = useState<'all' | 'brunch' | 'dinner'>('all')
+  const [recipeTypeFilter, setRecipeTypeFilter] = useState<RecipeType | 'all'>('all')
 
   // Group meals by day
   const mealsByDay = useMemo(() => {
@@ -116,10 +126,10 @@ export function TemplateEditorClient({ template: initialTemplate, recipes }: Tem
   const filteredRecipes = useMemo(() => {
     return recipes.filter(recipe => {
       const matchesSearch = recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesMealType = mealTypeFilter === 'all' || recipe.meal_type === mealTypeFilter
-      return matchesSearch && matchesMealType
+      const matchesType = recipeTypeFilter === 'all' || recipe.type === recipeTypeFilter
+      return matchesSearch && matchesType
     })
-  }, [recipes, searchQuery, mealTypeFilter])
+  }, [recipes, searchQuery, recipeTypeFilter])
 
   const handleSaveTemplate = async (updates: { name?: string; description?: string }) => {
     setIsSaving(true)
@@ -235,7 +245,7 @@ export function TemplateEditorClient({ template: initialTemplate, recipes }: Tem
 
   const openAddRecipe = (meal: WeeklyMenuTemplateMeal) => {
     setSelectedMealForRecipe(meal)
-    setMealTypeFilter(meal.meal_type)
+    setRecipeTypeFilter('all')
     setIsAddRecipeOpen(true)
   }
 
@@ -393,16 +403,21 @@ export function TemplateEditorClient({ template: initialTemplate, recipes }: Tem
               </div>
             </div>
 
-            {/* Meal Type Filter */}
+            {/* Recipe Type Filter */}
             <div className="space-y-2">
-              <Label>Filter by Meal Type</Label>
-              <Tabs value={mealTypeFilter} onValueChange={(v) => setMealTypeFilter(v as typeof mealTypeFilter)}>
-                <TabsList className="w-full">
-                  <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-                  <TabsTrigger value="brunch" className="flex-1">Brunch</TabsTrigger>
-                  <TabsTrigger value="dinner" className="flex-1">Dinner</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <Label>Filter by Type</Label>
+              <Select value={recipeTypeFilter} onValueChange={(v) => setRecipeTypeFilter(v as RecipeType | 'all')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RECIPE_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Recipe List */}
@@ -424,10 +439,12 @@ export function TemplateEditorClient({ template: initialTemplate, recipes }: Tem
                       <ChefHat className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{recipe.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {recipe.meal_type}
-                          </Badge>
+<div className="flex items-center gap-2 mt-0.5">
+                                          {recipe.type && (
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
+                                              {recipe.type}
+                                            </Badge>
+                                          )}
                           {recipe.suitable_for_vegan && (
                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-green-50 text-green-700 border-green-200">
                               Vegan
