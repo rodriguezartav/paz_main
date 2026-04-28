@@ -8,12 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { Recipe, Ingredient, RecipeIngredient, Measurement } from '@/lib/types'
-import { ArrowLeft, Search, Plus, Minus, X, ChefHat, Check, Trash2 } from 'lucide-react'
+import { ArrowLeft, Search, Plus, Minus, X, ChefHat, Check, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { updateRecipeIngredientsAction } from './actions'
 
 interface RecipeManagerClientProps {
   recipe: Recipe
   allIngredients: Ingredient[]
+  allRecipes: Recipe[]
 }
 
 // Helper to get ingredient type colors
@@ -49,11 +50,16 @@ interface SelectedIngredient {
   ingredient: Ingredient
 }
 
-export function RecipeManagerClient({ recipe, allIngredients }: RecipeManagerClientProps) {
+export function RecipeManagerClient({ recipe, allIngredients, allRecipes }: RecipeManagerClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [searchQuery, setSearchQuery] = useState('')
   const [hasChanges, setHasChanges] = useState(false)
+  
+  // Find current recipe index and adjacent recipes
+  const currentIndex = allRecipes.findIndex(r => r.id === recipe.id)
+  const prevRecipe = currentIndex > 0 ? allRecipes[currentIndex - 1] : null
+  const nextRecipe = currentIndex < allRecipes.length - 1 ? allRecipes[currentIndex + 1] : null
   
   // Initialize selected ingredients from recipe
   const [selectedIngredients, setSelectedIngredients] = useState<SelectedIngredient[]>(() => {
@@ -169,18 +175,47 @@ export function RecipeManagerClient({ recipe, allIngredients }: RecipeManagerCli
               </div>
             </div>
           </div>
-          <Button 
-            onClick={handleSave} 
-            disabled={!hasChanges || isPending}
-            size="sm"
-          >
-            {isPending ? 'Saving...' : (
-              <>
-                <Check className="mr-1.5 h-4 w-4" />
-                Save Changes
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={handleSave} 
+              disabled={!hasChanges || isPending}
+              size="sm"
+            >
+              {isPending ? 'Saving...' : (
+                <>
+                  <Check className="mr-1.5 h-4 w-4" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+            
+            {/* Navigation Buttons */}
+            <div className="flex items-center gap-1 ml-2 border-l border-border pl-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!prevRecipe || hasChanges}
+                onClick={() => prevRecipe && router.push(`/recipes/${prevRecipe.id}/manage`)}
+                title={prevRecipe ? `Previous: ${prevRecipe.name}` : 'No previous recipe'}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Prev
+              </Button>
+              <span className="text-xs text-muted-foreground px-2">
+                {currentIndex + 1} / {allRecipes.length}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!nextRecipe || hasChanges}
+                onClick={() => nextRecipe && router.push(`/recipes/${nextRecipe.id}/manage`)}
+                title={nextRecipe ? `Next: ${nextRecipe.name}` : 'No next recipe'}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
