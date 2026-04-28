@@ -7,6 +7,7 @@ const PUBLIC_ROUTES = [
   '/login',
   '/apply',
   '/auth/callback',
+  '/setup',
 ]
 
 // Check if path starts with any public route
