@@ -44,8 +44,13 @@ export function RecipeCard({ recipe, onView, onEdit }: RecipeCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Ingredient Count */}
-        <div className="flex items-center gap-2">
+        {/* Type and Ingredient Count */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {recipe.type && (
+            <Badge variant="secondary" className="capitalize">
+              {recipe.type}
+            </Badge>
+          )}
           <Badge variant="outline" className="bg-muted/50 text-muted-foreground">
             {recipeIngredients.length} ingredients
           </Badge>
