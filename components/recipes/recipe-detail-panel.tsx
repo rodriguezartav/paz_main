@@ -26,7 +26,12 @@ export function RecipeDetailPanel({ recipe, open, onOpenChange }: RecipeDetailPa
             </div>
             <div>
               <DialogTitle className="text-xl text-foreground">{recipe.name}</DialogTitle>
-              <p className="mt-1 text-sm text-muted-foreground">{recipe.description}</p>
+              {recipe.english_name && (
+                <p className="text-sm text-muted-foreground">{recipe.english_name}</p>
+              )}
+              {recipe.description && (
+                <p className="mt-1 text-sm text-muted-foreground">{recipe.description}</p>
+              )}
             </div>
           </div>
         </DialogHeader>

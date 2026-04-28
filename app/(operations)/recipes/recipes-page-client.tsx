@@ -41,6 +41,7 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
 
   const handleSave = async (data: { 
     name: string
+    english_name: string | null
     description: string | null
     notes: string | null
     id?: string
@@ -51,12 +52,12 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
       if (data.id) {
         await updateRecipeAction(
           data.id,
-          { name: data.name, description: data.description, notes: data.notes },
+          { name: data.name, english_name: data.english_name, description: data.description, notes: data.notes },
           data.recipe_ingredients
         )
       } else {
         await createRecipeAction(
-          { name: data.name, description: data.description, notes: data.notes },
+          { name: data.name, english_name: data.english_name, description: data.description, notes: data.notes },
           data.recipe_ingredients
         )
       }
