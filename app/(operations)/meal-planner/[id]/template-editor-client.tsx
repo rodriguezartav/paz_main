@@ -438,7 +438,7 @@ export function TemplateEditorClient({ template: initialTemplate, recipes }: Tem
                     >
                       <ChefHat className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{recipe.name}</p>
+                        <p className="text-sm font-medium">{recipe.name}</p>
 <div className="flex items-center gap-2 mt-0.5">
                                           {recipe.type && (
                                             <Badge variant="outline" className="text-[10px] px-1.5 py-0 capitalize">
