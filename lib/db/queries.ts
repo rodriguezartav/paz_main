@@ -17,7 +17,24 @@ export async function getResidentById(id: string): Promise<Resident | null> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('residents')
-    .select('*')
+    .select(`
+      *,
+      current_bed:resident_beds (
+        id,
+        bed:beds (
+          id,
+          name,
+          room:rooms (
+            id,
+            name,
+            building:buildings (
+              id,
+              name
+            )
+          )
+        )
+      )
+    `)
     .eq('id', id)
     .single()
   

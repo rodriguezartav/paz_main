@@ -293,7 +293,14 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
                 <MapPin className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Room / Bed</p>
-                  <p className="text-card-foreground">{resident.room || '-'} / {resident.bed || '-'}</p>
+                  {resident.current_bed && resident.current_bed.length > 0 ? (
+                    <p className="text-card-foreground">
+                      {resident.current_bed[0].bed.room.building?.name && `${resident.current_bed[0].bed.room.building.name} - `}
+                      {resident.current_bed[0].bed.room.name} - {resident.current_bed[0].bed.name}
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground">Not assigned</p>
+                  )}
                 </div>
               </div>
             </div>
