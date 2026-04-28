@@ -271,8 +271,8 @@ export function RecipeManagerClient({ recipe, allIngredients, allRecipes }: Reci
                             value={si.amount}
                             onChange={(e) => setAmount(si.ingredient_id, parseFloat(e.target.value) || 0.5)}
                             className="w-16 h-8 text-center px-1"
-                            step="0.5"
-                            min="0.5"
+                            step="0.1"
+                            min="0.01"
                           />
                           <span className="text-sm text-muted-foreground w-10">
                             {si.measurement}
