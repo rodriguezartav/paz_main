@@ -25,6 +25,34 @@ export async function getResidentById(id: string): Promise<Resident | null> {
   return data
 }
 
+export async function deleteResident(id: string): Promise<void> {
+  const supabase = await createClient()
+  
+  // Delete related payments first (cascade)
+  const { error: paymentsError } = await supabase
+    .from('payments')
+    .delete()
+    .eq('resident_id', id)
+  
+  if (paymentsError) throw paymentsError
+  
+  // Delete related resident_beds (cascade)
+  const { error: bedsError } = await supabase
+    .from('resident_beds')
+    .delete()
+    .eq('resident_id', id)
+  
+  if (bedsError) throw bedsError
+  
+  // Delete the resident
+  const { error: residentError } = await supabase
+    .from('residents')
+    .delete()
+    .eq('id', id)
+  
+  if (residentError) throw residentError
+}
+
 export async function getResidentsByStatus(status: Resident['status']): Promise<Resident[]> {
   const supabase = await createClient()
   const { data, error } = await supabase

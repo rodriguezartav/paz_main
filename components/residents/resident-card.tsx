@@ -1,15 +1,29 @@
 'use client'
 
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { DietBadge } from './diet-badge'
 import { StatusBadge } from './status-badge'
 import { PaymentStatusBadge } from './payment-status-badge'
 import { BalanceDueBadge } from './balance-due-badge'
 import type { Resident, Payment } from '@/lib/types'
 import { calculateNights } from '@/lib/utils/date'
-import { Calendar, MapPin, User, CheckCircle2, XCircle } from 'lucide-react'
+import { Calendar, MapPin, User, CheckCircle2, XCircle, Trash2 } from 'lucide-react'
+import { deleteResidentAction } from '@/app/(operations)/residents/actions'
 
 interface ResidentCardProps {
   resident: Resident
@@ -22,7 +36,18 @@ function formatDate(dateString: string): string {
 }
 
 export function ResidentCard({ resident, payment }: ResidentCardProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const nights = calculateNights(resident.arrival_date, resident.departure_date)
+  
+  const handleDelete = () => {
+    startTransition(async () => {
+      await deleteResidentAction(resident.id)
+      setShowDeleteDialog(false)
+      router.refresh()
+    })
+  }
   
   return (
     <Card className="border-border bg-card transition-shadow hover:shadow-md">
@@ -92,12 +117,39 @@ export function ResidentCard({ resident, payment }: ResidentCardProps) {
           )}
         </div>
 
-        {/* View Details Button */}
-        <Link href={`/residents/${resident.id}`}>
-          <Button variant="outline" className="w-full">
-            View Details
-          </Button>
-        </Link>
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Link href={`/residents/${resident.id}`} className="flex-1">
+            <Button variant="outline" className="w-full">
+              View Details
+            </Button>
+          </Link>
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="icon" className="text-destructive hover:bg-destructive hover:text-destructive-foreground">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Resident</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete {resident.name}? This will also delete their payment records and bed assignments. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  disabled={isPending}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isPending ? 'Deleting...' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </CardContent>
     </Card>
   )
