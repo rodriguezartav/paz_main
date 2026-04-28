@@ -855,6 +855,16 @@ export async function updateApplicationQuestion(id: string, question: Partial<Om
 
 export async function deleteApplicationQuestion(id: string): Promise<void> {
   const supabase = await createClient()
+  
+  // First delete any answers referencing this question (cascade)
+  const { error: answersError } = await supabase
+    .from('application_answers')
+    .delete()
+    .eq('question_id', id)
+  
+  if (answersError) throw answersError
+  
+  // Then delete the question
   const { error } = await supabase
     .from('application_questions')
     .delete()
