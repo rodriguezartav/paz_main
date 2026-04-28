@@ -63,6 +63,7 @@ export interface Ingredient {
 
 // Recipe Types
 export type MealType = 'brunch' | 'dinner'
+export type RecipeType = 'salad' | 'sauce' | 'soup' | 'main' | 'side' | 'dessert'
 
 export interface RecipeIngredient {
   id: string
@@ -81,6 +82,7 @@ export interface Recipe {
   description: string | null
   notes: string | null
   meal_type: MealType
+  type: RecipeType | null
   suitable_for_vegetarian?: boolean
   suitable_for_vegan?: boolean
   created_at: string
