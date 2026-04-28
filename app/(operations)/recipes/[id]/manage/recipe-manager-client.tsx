@@ -131,7 +131,7 @@ export function RecipeManagerClient({ recipe, allIngredients, allRecipes }: Reci
   const setAmount = (ingredientId: string, amount: number) => {
     setSelectedIngredients(prev => prev.map(si => {
       if (si.ingredient_id !== ingredientId) return si
-      return { ...si, amount: Math.max(0.5, amount) }
+      return { ...si, amount: Math.max(0.01, amount) }
     }))
     setHasChanges(true)
   }
