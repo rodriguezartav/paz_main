@@ -24,16 +24,14 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const result = await login(username, password)
+      const result = await login(username, password, redirect)
       
-      if (result.error) {
+      // If we get here without redirect, there was an error
+      if (result?.error) {
         setError(result.error)
-      } else {
-        router.push(redirect)
-        router.refresh()
       }
     } catch {
-      setError('An unexpected error occurred')
+      // redirect() throws, so this is expected on success
     } finally {
       setIsLoading(false)
     }
