@@ -247,6 +247,9 @@ export function RoomsPageClient({ initialRooms, residents }: RoomsPageClientProp
                   <div>
                     <CardTitle className="text-lg">{room.name}</CardTitle>
                     <div className="flex items-center gap-2 mt-1">
+                      {room.building && (
+                        <Badge variant="outline" className="text-xs">{room.building.name}</Badge>
+                      )}
                       {room.is_private && (
                         <Badge variant="secondary" className="text-xs">Private</Badge>
                       )}

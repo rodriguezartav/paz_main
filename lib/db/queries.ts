@@ -25,6 +25,39 @@ export async function getResidentById(id: string): Promise<Resident | null> {
   return data
 }
 
+export async function createResidentFromApplication(data: {
+  name: string
+  email: string
+  whatsapp?: string | null
+  nationality?: string | null
+  gender: 'female' | 'male'
+  age?: number | null
+  diet: 'eats_all' | 'vegetarian' | 'vegan'
+  arrival_date: string
+  departure_date: string
+  application_id: string
+  notes?: string | null
+}): Promise<Resident> {
+  const supabase = await createClient()
+  
+  const { data: resident, error } = await supabase
+    .from('residents')
+    .insert({
+      ...data,
+      status: 'upcoming',
+      check_in_completed: false,
+      release_accepted: false,
+      health_insurance_confirmed: false,
+      media_release_accepted: false,
+      orientation_completed: false,
+    })
+    .select()
+    .single()
+  
+  if (error) throw error
+  return resident
+}
+
 export async function deleteResident(id: string): Promise<void> {
   const supabase = await createClient()
   
@@ -378,11 +411,12 @@ export async function getRoomOccupancyForDateRange(startDate: string, endDate: s
 }> {
   const supabase = await createClient()
   
-  // Get all rooms with beds
+  // Get all rooms with beds and building
   const { data: rooms, error: roomsError } = await supabase
     .from('rooms')
     .select(`
       *,
+      building:buildings (*),
       beds (
         *,
         current_assignment:resident_beds (
@@ -531,6 +565,7 @@ export async function getRooms(): Promise<Room[]> {
     .from('rooms')
     .select(`
       *,
+      building:buildings (*),
       beds (
         *,
         current_assignment:resident_beds (

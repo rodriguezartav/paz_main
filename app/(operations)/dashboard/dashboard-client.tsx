@@ -488,7 +488,20 @@ export function DashboardClient({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {rooms.slice(0, 6).map((room) => {
+              {[...rooms]
+                .sort((a, b) => {
+                  const aOccupied = a.beds?.filter(bed => bed.current_assignment)?.length || 0
+                  const aTotal = a.beds?.length || 0
+                  const aPercent = aTotal > 0 ? aOccupied / aTotal : 0
+                  
+                  const bOccupied = b.beds?.filter(bed => bed.current_assignment)?.length || 0
+                  const bTotal = b.beds?.length || 0
+                  const bPercent = bTotal > 0 ? bOccupied / bTotal : 0
+                  
+                  return bPercent - aPercent // Descending order
+                })
+                .slice(0, 6)
+                .map((room) => {
                 const totalRoomBeds = room.beds?.length || 0
                 const occupiedRoomBeds = room.beds?.filter(bed => bed.current_assignment)?.length || 0
                 const occupancyPercent = totalRoomBeds > 0 ? (occupiedRoomBeds / totalRoomBeds) * 100 : 0
@@ -496,7 +509,14 @@ export function DashboardClient({
                 return (
                   <div key={room.id} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{room.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{room.name}</span>
+                        {room.building && (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">
+                            {room.building.name}
+                          </Badge>
+                        )}
+                      </div>
                       <span className="text-muted-foreground">
                         {occupiedRoomBeds}/{totalRoomBeds} beds
                       </span>

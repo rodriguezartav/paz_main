@@ -7,10 +7,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import type { Application, ApplicationStatus, ApplicationAnswer } from '@/lib/types'
-import { updateApplicationStatus, updateApplicationScore, updateApplicationNotes } from '../actions'
-import { ArrowLeft, Star, Mail, Phone, Calendar, Clock, AlertTriangle, CheckCircle, AlertCircle, Save } from 'lucide-react'
+import { updateApplicationStatus, updateApplicationScore, updateApplicationNotes, acceptApplicationAndCreateResident } from '../actions'
+import { ArrowLeft, Star, Mail, Phone, Calendar, Clock, AlertTriangle, CheckCircle, AlertCircle, Save, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ApplicationReviewClientProps {
@@ -168,6 +178,12 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
   const [score, setScore] = useState(application.internal_score || 0)
   const [notes, setNotes] = useState(application.reviewer_notes || '')
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Acceptance dialog state
+  const [showAcceptDialog, setShowAcceptDialog] = useState(false)
+  const [arrivalDate, setArrivalDate] = useState('')
+  const [departureDate, setDepartureDate] = useState('')
+  const [isAccepting, setIsAccepting] = useState(false)
 
   const sectionedAnswers = groupAnswersBySection(application.answers)
   const fitSignals = analyzeFitSignals(application.answers)
@@ -196,6 +212,41 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
     setIsSaving(true)
     await updateApplicationNotes(application.id, notes)
     setIsSaving(false)
+  }
+
+  const handleAcceptApplication = async () => {
+    if (!arrivalDate || !departureDate) return
+    
+    setIsAccepting(true)
+    try {
+      const { residentId } = await acceptApplicationAndCreateResident(
+        application,
+        arrivalDate,
+        departureDate
+      )
+      setStatus('accepted')
+      setShowAcceptDialog(false)
+      router.push(`/residents/${residentId}`)
+    } catch (error) {
+      console.error('Failed to accept application:', error)
+    } finally {
+      setIsAccepting(false)
+    }
+  }
+
+  const openAcceptDialog = () => {
+    // Pre-fill dates from application answers if available
+    const preferredArrival = getAnswerValue('preferred arrival date')
+    if (preferredArrival) {
+      setArrivalDate(preferredArrival)
+    }
+    // Default departure to 2 weeks after arrival
+    if (preferredArrival) {
+      const arrival = new Date(preferredArrival)
+      arrival.setDate(arrival.getDate() + 14)
+      setDepartureDate(arrival.toISOString().split('T')[0])
+    }
+    setShowAcceptDialog(true)
   }
 
   return (
@@ -449,9 +500,10 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
             <CardContent className="space-y-2">
               <Button 
                 className="w-full bg-green-600 hover:bg-green-700" 
-                onClick={() => handleStatusChange('accepted')}
+                onClick={openAcceptDialog}
               >
-                Accept Application
+                <UserPlus className="mr-2 h-4 w-4" />
+                Accept & Create Resident
               </Button>
               <Button 
                 variant="outline" 
@@ -478,6 +530,53 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
           </Card>
         </div>
       </div>
+
+      {/* Accept Application Dialog */}
+      <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Accept Application & Create Resident</DialogTitle>
+            <DialogDescription>
+              This will accept the application and create a new resident record for {application.applicant_name}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="arrival-date">Arrival Date</Label>
+              <Input
+                id="arrival-date"
+                type="date"
+                value={arrivalDate}
+                onChange={(e) => setArrivalDate(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="departure-date">Departure Date</Label>
+              <Input
+                id="departure-date"
+                type="date"
+                value={departureDate}
+                onChange={(e) => setDepartureDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAcceptDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAcceptApplication}
+              disabled={!arrivalDate || !departureDate || isAccepting}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isAccepting ? 'Creating...' : 'Accept & Create Resident'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
