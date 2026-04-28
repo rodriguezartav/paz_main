@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
 
 const navSections = [
   {
@@ -55,10 +56,17 @@ export function SidebarNav({ activeSection, onSectionChange }: SidebarNavProps) 
     <aside className="hidden w-64 border-r border-border bg-sidebar md:block">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="border-b border-border p-6">
+        <div className="border-b border-border pl-10 py-1">
           <Link href="/" className="block">
-            <h1 className="text-xl font-semibold text-foreground">Paz Operations</h1>
-            <p className="text-sm text-muted-foreground">Corcovado</p>
+            
+            <Image
+            src="/logo.png"
+            alt="Paz Operations"
+            width={100}
+            height={30}
+            className="mb-2 h-auto w-auto max-w-[100px]"
+            priority
+          />
           </Link>
         </div>
 

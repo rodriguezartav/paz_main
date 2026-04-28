@@ -240,6 +240,26 @@ export function DashboardClient({
                           <Badge variant="secondary" className="text-xs">
                             {diets.total} <Users className="h-3 w-3 mr-1" />
                           </Badge>
+                          
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {(() => {
+                        const dayMeals = getMealsForDay(day.dateString)
+                        return (
+                          <div className="pt-2 pb-1 border-t space-y-4">
+                            
+                            
+                            {!dayMeals.hasPlan && (
+                              <div className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50">
+                                <p className="text-sm text-muted-foreground">No meal plan for this day</p>
+                                 
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center gap-2 border-b pb-2 border-b-olive-200">
+                          
                           {diets.eatsAll > 0 && (
                             <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                               {diets.eatsAll} all
@@ -256,24 +276,7 @@ export function DashboardClient({
                             </Badge>
                           )}
                         </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      {(() => {
-                        const dayMeals = getMealsForDay(day.dateString)
-                        return (
-                          <div className="pt-2 pb-1 border-t space-y-4">
-                            {!dayMeals.hasPlan && (
-                              <div className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50">
-                                <p className="text-sm text-muted-foreground">No meal plan for this day</p>
-                                <Link href="/weekly-calendar">
-                                  <Button variant="outline" size="sm">
-                                    Create Plan
-                                  </Button>
-                                </Link>
-                              </div>
-                            )}
-                            
+
                             {/* Brunch Section */}
                             <div>
                               <div className="flex items-center gap-2 mb-2">
