@@ -28,6 +28,8 @@ export async function authMiddleware(request: NextRequest) {
   // Check for session cookie
   const sessionCookie = request.cookies.get('paz_session')
   
+  console.log('[v0] Middleware checking path:', pathname, 'Cookie present:', !!sessionCookie?.value)
+  
   if (!sessionCookie?.value) {
     // Redirect to login
     const url = request.nextUrl.clone()
