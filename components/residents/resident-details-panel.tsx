@@ -13,8 +13,9 @@ import {
   User, Mail, Phone, AlertTriangle, 
   Calendar, MapPin, FileText, 
   CheckCircle2, XCircle, CreditCard,
-  DoorOpen, Edit, ExternalLink
+  DoorOpen, Edit, ExternalLink, AlertCircle
 } from 'lucide-react'
+import type { ApplicationAnswer } from '@/lib/types'
 
 interface ResidentDetailsPanelProps {
   resident: Resident
@@ -33,6 +34,86 @@ function formatCurrency(amount: number, currency: string): string {
     return `₡${amount.toLocaleString()}`
   }
   return `$${amount.toLocaleString()}`
+}
+
+function parseAnswerValue(answer: ApplicationAnswer): string | string[] {
+  try {
+    const parsed = JSON.parse(String(answer.answer_value))
+    return parsed
+  } catch {
+    return String(answer.answer_value)
+  }
+}
+
+function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
+  const green: string[] = []
+  const yellow: string[] = []
+  const red: string[] = []
+  
+  for (const answer of answers) {
+    const value = parseAnswerValue(answer)
+    const valueStr = Array.isArray(value) ? value.join(' ') : String(value)
+    const question = answer.question_text_snapshot.toLowerCase()
+    
+    // Green signals
+    if (question.includes('shared living environment') && valueStr.includes('Yes')) {
+      green.push('Understands shared living')
+    }
+    if (question.includes('substance-free') && valueStr === 'Yes') {
+      green.push('Accepts substance-free environment')
+    }
+    if (question.includes('no-phone/no-electronics') && valueStr === 'Yes') {
+      green.push('Comfortable with digital detox')
+    }
+    if (question.includes('health or travel insurance') && valueStr === 'Yes') {
+      green.push('Has insurance')
+    }
+    if (question.includes('which statement feels most true') && valueStr.includes('simple shared-life')) {
+      green.push('Wants shared life in nature')
+    }
+    if (question.includes('cleaning after yourself') && valueStr === 'Yes') {
+      green.push('Comfortable with self-care')
+    }
+    
+    // Yellow signals
+    if (valueStr.includes('I need more information')) {
+      yellow.push('Needs more information')
+    }
+    if (question.includes('work online') && (valueStr === 'Part-time' || valueStr === 'A little')) {
+      yellow.push('Needs some online work time')
+    }
+    if (question.includes('emotional crisis') && valueStr === 'Yes, mildly') {
+      yellow.push('Going through mild transition')
+    }
+    if (question.includes('which statement feels most true') && valueStr.includes('not sure yet')) {
+      yellow.push('Unsure about expectations')
+    }
+    
+    // Red signals
+    if (question.includes('which statement feels most true') && valueStr.includes('comfortable retreat')) {
+      red.push('Expects hotel-style service')
+    }
+    if (question.includes('which statement feels most true') && valueStr.includes('surf trip with cheap')) {
+      red.push('Expects cheap surf lodging')
+    }
+    if (question.includes('substance-free') && valueStr === 'No') {
+      red.push('Does not accept substance-free rules')
+    }
+    if (question.includes('health or travel insurance') && valueStr === 'No') {
+      red.push('No insurance and will not get it')
+    }
+    if (question.includes('emotional crisis') && valueStr === 'Yes, strongly') {
+      red.push('In strong emotional crisis')
+    }
+    if (question.includes('work online') && valueStr === 'Full-time') {
+      red.push('Needs full-time coworking')
+    }
+    if (question.includes('hours per day') && valueStr === '5+') {
+      red.push('Expects 5+ hours online daily')
+    }
+  }
+  
+  return { green: [...new Set(green)], yellow: [...new Set(yellow)], red: [...new Set(red)] }
 }
 
 export function ResidentDetailsPanel({ resident, payment, application }: ResidentDetailsPanelProps) {
@@ -205,31 +286,96 @@ export function ResidentDetailsPanel({ resident, payment, application }: Residen
         )}
       </div>
 
-      {/* Application Link */}
-        {application && (
+      {/* Application & Conclusions */}
+        {application && (() => {
+          const fitSignals = analyzeFitSignals(application.answers)
+          return (
           <Card className="border-border bg-card">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Application</CardTitle>
+              <CardTitle className="text-lg">Application & Conclusions</CardTitle>
               <Link href={`/applications/${application.id}`}>
                 <Button variant="outline" size="sm">
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  View Application
+                  View Full Application
                 </Button>
               </Link>
             </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <p>Submitted: {application.submitted_at ? formatDate(application.submitted_at) : '-'}</p>
                 {application.internal_score && (
-                  <p className="mt-1">Score: {application.internal_score}/5</p>
-                )}
-                {application.reviewer_notes && (
-                  <p className="mt-2 rounded-lg bg-muted/50 p-2">{application.reviewer_notes}</p>
+                  <p>Score: {application.internal_score}/5</p>
                 )}
               </div>
+              
+              {application.reviewer_notes && (
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">Reviewer Notes</p>
+                  <p className="text-sm">{application.reviewer_notes}</p>
+                </div>
+              )}
+
+              {/* Fit Signals */}
+              <div className="grid gap-3 sm:grid-cols-3">
+                {fitSignals.green.length > 0 && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                    <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-green-700">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Green Signals
+                    </div>
+                    <ul className="space-y-1 text-xs text-green-800">
+                      {fitSignals.green.map((signal, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                          {signal}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {fitSignals.yellow.length > 0 && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-amber-700">
+                      <AlertCircle className="h-4 w-4" />
+                      Yellow Signals
+                    </div>
+                    <ul className="space-y-1 text-xs text-amber-800">
+                      {fitSignals.yellow.map((signal, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                          {signal}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {fitSignals.red.length > 0 && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                    <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-red-700">
+                      <AlertTriangle className="h-4 w-4" />
+                      Red Signals
+                    </div>
+                    <ul className="space-y-1 text-xs text-red-800">
+                      {fitSignals.red.map((signal, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                          {signal}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {fitSignals.green.length === 0 && fitSignals.yellow.length === 0 && fitSignals.red.length === 0 && (
+                <p className="text-sm text-muted-foreground">No fit signals detected from application</p>
+              )}
             </CardContent>
           </Card>
-        )}
+          )
+        })()}
 
       {/* Admin Actions */}
       <Card className="border-border bg-card">
