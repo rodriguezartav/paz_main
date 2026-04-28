@@ -29,7 +29,7 @@ import {
   Drumstick
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { WeeklyMealPlan, WeeklyMealPlanMeal, Recipe, DayOfWeek, MealType, RecipeRole, ServingTarget } from '@/lib/types'
+import type { WeeklyMealPlan, WeeklyMealPlanMeal, Recipe, DayOfWeek, MealType, RecipeRole, ServingTarget, RecipeType } from '@/lib/types'
 import { 
   updateMealHeadcountsAction, 
   addRecipeToMealAction, 
@@ -72,6 +72,16 @@ const SERVING_TARGETS: { value: ServingTarget; label: string }[] = [
   { value: 'vegetarian_and_vegan', label: 'Vegetarian + Vegan' },
 ]
 
+const RECIPE_TYPES: { value: RecipeType | 'all'; label: string }[] = [
+  { value: 'all', label: 'All Types' },
+  { value: 'main', label: 'Main' },
+  { value: 'side', label: 'Side' },
+  { value: 'salad', label: 'Salad' },
+  { value: 'soup', label: 'Soup' },
+  { value: 'sauce', label: 'Sauce' },
+  { value: 'dessert', label: 'Dessert' },
+]
+
 // Format date range for display
 function formatWeekRange(startDate: string): string {
   const start = new Date(startDate + 'T00:00:00')
@@ -104,6 +114,7 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
   const [selectedRecipeId, setSelectedRecipeId] = useState('')
   const [selectedRole, setSelectedRole] = useState<RecipeRole>('main')
   const [selectedTarget, setSelectedTarget] = useState<ServingTarget>('everyone')
+  const [recipeTypeFilter, setRecipeTypeFilter] = useState<RecipeType | 'all'>('all')
   
   // Headcount editing
   const [headcountEatsAll, setHeadcountEatsAll] = useState(0)
@@ -150,6 +161,7 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
     setSelectedRecipeId('')
     setSelectedRole('main')
     setSelectedTarget('everyone')
+    setRecipeTypeFilter('all')
     setAddingRecipeToMeal(meal)
   }
 
@@ -216,9 +228,13 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
     })
   }
 
-  // Filter recipes by meal type
-  const getRecipesForMealType = (mealType: MealType): Recipe[] => {
-    return recipes.filter(r => r.meal_type === mealType)
+  // Filter recipes by meal type and recipe type
+  const getFilteredRecipes = (mealType: MealType): Recipe[] => {
+    return recipes.filter(r => {
+      const matchesMealType = r.meal_type === mealType
+      const matchesRecipeType = recipeTypeFilter === 'all' || r.type === recipeTypeFilter
+      return matchesMealType && matchesRecipeType
+    })
   }
 
   return (
@@ -442,17 +458,39 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
+              <Label>Filter by Type</Label>
+              <Select value={recipeTypeFilter} onValueChange={(v) => {
+                setRecipeTypeFilter(v as RecipeType | 'all')
+                setSelectedRecipeId('') // Reset selection when filter changes
+              }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RECIPE_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label>Recipe</Label>
               <Select value={selectedRecipeId} onValueChange={setSelectedRecipeId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a recipe" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
-                  {addingRecipeToMeal && getRecipesForMealType(addingRecipeToMeal.meal_type).map((recipe) => (
+                  {addingRecipeToMeal && getFilteredRecipes(addingRecipeToMeal.meal_type).map((recipe) => (
                     <SelectItem key={recipe.id} value={recipe.id}>
                       <div className="flex items-center gap-2">
                         <ChefHat className="h-3.5 w-3.5" />
                         {recipe.name}
+                        {recipe.type && (
+                          <Badge variant="secondary" className="text-[10px] px-1 py-0 capitalize">{recipe.type}</Badge>
+                        )}
                         {recipe.suitable_for_vegan && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0 bg-emerald-50 text-emerald-700">V</Badge>
                         )}
