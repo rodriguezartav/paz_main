@@ -199,6 +199,11 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
   }
 
   const handleStatusChange = async (newStatus: ApplicationStatus) => {
+    // If changing to accepted, open the dialog to create resident
+    if (newStatus === 'accepted') {
+      openAcceptDialog()
+      return
+    }
     setStatus(newStatus)
     await updateApplicationStatus(application.id, newStatus)
   }
