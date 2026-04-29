@@ -71,7 +71,7 @@ export function BuildingsPageClient({ initialBuildings, residents }: BuildingsPa
   // Room dialog state
   const [roomDialogOpen, setRoomDialogOpen] = useState(false)
   const [editingRoom, setEditingRoom] = useState<Room | null>(null)
-  const [roomForm, setRoomForm] = useState({ name: '', description: '', is_private: false, building_id: '' })
+  const [roomForm, setRoomForm] = useState({ name: '', description: '', is_private: false, building_id: '', room_type: 'double' as const })
   
   // Bed dialog state
   const [bedDialogOpen, setBedDialogOpen] = useState(false)
@@ -132,19 +132,20 @@ export function BuildingsPageClient({ initialBuildings, residents }: BuildingsPa
   }
 
   // Room handlers
-  const openAddRoom = (buildingId: string) => {
-    setEditingRoom(null)
-    setRoomForm({ name: '', description: '', is_private: false, building_id: buildingId })
-    setRoomDialogOpen(true)
+const openAddRoom = (buildingId: string) => {
+  setEditingRoom(null)
+  setRoomForm({ name: '', description: '', is_private: false, building_id: buildingId, room_type: 'double' })
+  setRoomDialogOpen(true)
   }
 
-  const openEditRoom = (room: Room) => {
-    setEditingRoom(room)
-    setRoomForm({ 
-      name: room.name, 
-      description: room.description || '', 
-      is_private: room.is_private,
-      building_id: room.building_id || ''
+const openEditRoom = (room: Room) => {
+  setEditingRoom(room)
+  setRoomForm({
+  name: room.name,
+  description: room.description || '',
+  is_private: room.is_private,
+  building_id: room.building_id || '',
+  room_type: room.room_type || 'double'
     })
     setRoomDialogOpen(true)
   }

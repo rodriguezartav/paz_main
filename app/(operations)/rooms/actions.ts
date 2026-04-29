@@ -16,7 +16,7 @@ import {
 import type { Room, Bed } from '@/lib/types'
 
 export async function createRoomAction(
-  room: Omit<Room, 'id' | 'created_at' | 'updated_at' | 'beds'>
+  room: Omit<Room, 'id' | 'created_at' | 'updated_at' | 'beds' | 'building'>
 ) {
   const newRoom = await createRoom(room)
   revalidatePath('/rooms')
@@ -25,7 +25,7 @@ export async function createRoomAction(
 
 export async function updateRoomAction(
   id: string,
-  room: Partial<Omit<Room, 'id' | 'created_at' | 'updated_at' | 'beds'>>
+  room: Partial<Omit<Room, 'id' | 'created_at' | 'updated_at' | 'beds' | 'building'>>
 ) {
   const updatedRoom = await updateRoom(id, room)
   revalidatePath('/rooms')

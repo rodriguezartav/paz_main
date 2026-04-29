@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Building2, Plus, Edit, Trash2, BedDouble, User, UserPlus, Users } from 'lucide-react'
-import type { Room, Bed, Resident } from '@/lib/types'
+import type { Room, Bed, Resident, RoomType } from '@/lib/types'
 import {
   createRoomAction,
   updateRoomAction,
@@ -71,6 +71,7 @@ export function RoomsPageClient({ initialRooms, residents }: RoomsPageClientProp
   const [roomName, setRoomName] = useState('')
   const [roomDescription, setRoomDescription] = useState('')
   const [roomIsPrivate, setRoomIsPrivate] = useState(false)
+  const [roomType, setRoomType] = useState<RoomType>('double')
 
   // Bed form state
   const [bedName, setBedName] = useState('')
@@ -84,11 +85,13 @@ export function RoomsPageClient({ initialRooms, residents }: RoomsPageClientProp
       setRoomName(room.name)
       setRoomDescription(room.description || '')
       setRoomIsPrivate(room.is_private)
+      setRoomType(room.room_type || 'double')
     } else {
       setEditingRoom(null)
       setRoomName('')
       setRoomDescription('')
       setRoomIsPrivate(false)
+      setRoomType('double')
     }
     setIsRoomDialogOpen(true)
   }
@@ -130,12 +133,15 @@ export function RoomsPageClient({ initialRooms, residents }: RoomsPageClientProp
           name: roomName,
           description: roomDescription || null,
           is_private: roomIsPrivate,
+          room_type: roomType,
         })
       } else {
         await createRoomAction({
           name: roomName,
           description: roomDescription || null,
           is_private: roomIsPrivate,
+          room_type: roomType,
+          building_id: null,
         })
       }
       setIsRoomDialogOpen(false)
