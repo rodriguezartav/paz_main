@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, UtensilsCrossed, CalendarCheck, BookOpen } from 'lucide-react'
+import { Home, UtensilsCrossed, CalendarCheck, BookOpen, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 
@@ -72,11 +72,15 @@ export function PortalSidebar() {
           </ul>
         </nav>
 
-        {/* Footer */}
+        {/* Staff Link */}
         <div className="border-t border-border p-4">
-          <p className="text-xs text-muted-foreground px-4">
-            Off-grid rainforest living
-          </p>
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            Staff Dashboard
+          </Link>
         </div>
       </div>
     </aside>
