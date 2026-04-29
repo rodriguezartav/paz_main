@@ -1,4 +1,4 @@
-import { getApplicationById } from '@/lib/db/queries'
+import { getApplicationById, getRateRules, getResidentPriceModifiers } from '@/lib/db/queries'
 import { notFound } from 'next/navigation'
 import { ApplicationReviewClient } from './application-review-client'
 
@@ -19,11 +19,15 @@ export default async function ApplicationReviewPage({
   params: Promise<{ id: string }> 
 }) {
   const { id } = await params
-  const application = await getApplicationById(id)
+  const [application, rates, modifiers] = await Promise.all([
+    getApplicationById(id),
+    getRateRules(),
+    getResidentPriceModifiers()
+  ])
   
   if (!application) {
     notFound()
   }
   
-  return <ApplicationReviewClient application={application} />
+  return <ApplicationReviewClient application={application} rates={rates} modifiers={modifiers} />
 }

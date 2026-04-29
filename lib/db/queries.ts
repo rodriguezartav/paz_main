@@ -50,17 +50,23 @@ export async function createResidentFromApplication(data: {
   gender: 'female' | 'male'
   age?: number | null
   diet: 'eats_all' | 'vegetarian' | 'vegan'
+  resident_type?: 'volunteer' | 'resident' | 'retreat'
   arrival_date: string
   departure_date: string
+  nightly_rate?: number
   application_id: string
   notes?: string | null
 }): Promise<Resident> {
   const supabase = await createClient()
   
+  // Set resident_since to today's date when creating from application
+  const today = new Date().toISOString().split('T')[0]
+  
   const { data: resident, error } = await supabase
     .from('residents')
     .insert({
       ...data,
+      resident_since: today,
       status: 'upcoming',
       check_in_completed: false,
       release_accepted: false,

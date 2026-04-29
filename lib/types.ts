@@ -28,6 +28,8 @@ export interface Resident {
   media_release_accepted: boolean
   orientation_completed: boolean
   notes: string | null
+  nightly_rate: number | null
+  resident_since: string | null
   application_id: string | null
   created_at: string
   updated_at: string

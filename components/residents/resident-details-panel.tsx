@@ -24,7 +24,7 @@ import {
   User, Mail, Phone, AlertTriangle, 
   Calendar, MapPin, FileText, 
   CheckCircle2, XCircle, CreditCard,
-  DoorOpen, Edit, ExternalLink, AlertCircle, Loader2
+  DoorOpen, Edit, ExternalLink, AlertCircle, Loader2, DollarSign
 } from 'lucide-react'
 import type { ApplicationAnswer } from '@/lib/types'
 import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction, assignBedToResidentAction, updateResidentStayAction } from '@/app/(operations)/residents/actions'
@@ -152,6 +152,8 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
   const [editArrivalDate, setEditArrivalDate] = useState(resident.arrival_date)
   const [editDepartureDate, setEditDepartureDate] = useState(resident.departure_date)
   const [editResidentType, setEditResidentType] = useState<ResidentType>(resident.resident_type || 'resident')
+  const [editResidentSince, setEditResidentSince] = useState(resident.resident_since || '')
+  const [editNightlyRate, setEditNightlyRate] = useState<number | null>(resident.nightly_rate)
   const [editNotes, setEditNotes] = useState(resident.notes || '')
   
   // Get unique buildings from rooms
@@ -216,6 +218,8 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
     setEditArrivalDate(resident.arrival_date)
     setEditDepartureDate(resident.departure_date)
     setEditResidentType(resident.resident_type || 'resident')
+    setEditResidentSince(resident.resident_since || '')
+    setEditNightlyRate(resident.nightly_rate)
     setEditNotes(resident.notes || '')
     setShowEditStayDialog(true)
   }
@@ -226,6 +230,8 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
         arrival_date: editArrivalDate,
         departure_date: editDepartureDate,
         resident_type: editResidentType,
+        resident_since: editResidentSince || null,
+        nightly_rate: editNightlyRate,
         notes: editNotes || null
       })
       setShowEditStayDialog(false)
@@ -345,6 +351,24 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
                 <div>
                   <p className="text-sm text-muted-foreground">Resident Type</p>
                   <p className="text-card-foreground capitalize">{resident.resident_type || 'resident'}</p>
+                </div>
+              </div>
+              {resident.resident_since && (
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Resident Since</p>
+                    <p className="text-card-foreground">{formatDate(resident.resident_since)}</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <DollarSign className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Nightly Rate</p>
+                  <p className="text-card-foreground">
+                    {resident.nightly_rate != null ? `$${resident.nightly_rate}` : 'Not set'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -712,18 +736,46 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
               </div>
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Resident Type</Label>
+                <Select value={editResidentType} onValueChange={(value) => setEditResidentType(value as ResidentType)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="resident">Resident</SelectItem>
+                    <SelectItem value="volunteer">Volunteer</SelectItem>
+                    <SelectItem value="retreat">Retreat</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="resident_since">Resident Since</Label>
+                <Input
+                  id="resident_since"
+                  type="date"
+                  value={editResidentSince}
+                  onChange={(e) => setEditResidentSince(e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label>Resident Type</Label>
-              <Select value={editResidentType} onValueChange={(value) => setEditResidentType(value as ResidentType)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="resident">Resident</SelectItem>
-                  <SelectItem value="volunteer">Volunteer</SelectItem>
-                  <SelectItem value="retreat">Retreat</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="nightly_rate">Nightly Rate</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  id="nightly_rate"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={editNightlyRate ?? ''}
+                  onChange={(e) => setEditNightlyRate(e.target.value ? parseFloat(e.target.value) : null)}
+                  className="pl-7"
+                  placeholder="Enter nightly rate"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
