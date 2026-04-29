@@ -108,11 +108,8 @@ export async function fetchIngredientsForRangeAction(
     items_in_stock: number | null
     add_to_shopping_list_per_person: number | null
     add_to_shopping_list_per_week: number | null
-    source: 'recipe' | 'per_person' | 'per_week'
-    recipe_name?: string
-    recipe_amount?: number
-    meal_date?: string
-    prep_date?: string
+    sources: Array<{ type: 'recipe' | 'per_person' | 'per_week'; recipe_name?: string; recipe_amount?: number; prep_date?: string }>
+    total_recipe_amount: number
   }>
   error?: string 
 }> {
@@ -123,7 +120,7 @@ export async function fetchIngredientsForRangeAction(
     
     const shoppingIngredients = await getShoppingRelevantIngredients()
     
-    // Track unique ingredients with their sources
+    // Track unique ingredients by ID, consolidating sources
     const ingredientMap = new Map<string, {
       id: string
       name: string
@@ -132,12 +129,30 @@ export async function fetchIngredientsForRangeAction(
       items_in_stock: number | null
       add_to_shopping_list_per_person: number | null
       add_to_shopping_list_per_week: number | null
-      source: 'recipe' | 'per_person' | 'per_week'
-      recipe_name?: string
-      recipe_amount?: number
-      meal_date?: string
-      prep_date?: string
+      sources: Array<{ type: 'recipe' | 'per_person' | 'per_week'; recipe_name?: string; recipe_amount?: number; prep_date?: string }>
+      total_recipe_amount: number
     }>()
+
+    // Helper to ensure ingredient exists
+    const ensureIngredient = (ing: { 
+      id: string; name: string; type: string; measurement: string; 
+      items_in_stock: number | null; add_to_shopping_list_per_person: number | null; add_to_shopping_list_per_week: number | null 
+    }) => {
+      if (!ingredientMap.has(ing.id)) {
+        ingredientMap.set(ing.id, {
+          id: ing.id,
+          name: ing.name,
+          type: ing.type,
+          measurement: ing.measurement,
+          items_in_stock: ing.items_in_stock,
+          add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
+          add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
+          sources: [],
+          total_recipe_amount: 0
+        })
+      }
+      return ingredientMap.get(ing.id)!
+    }
 
     // Process meals where prep_date (meal_date - prep_day_offset) falls in range
     for (const meal of meals) {
@@ -163,24 +178,14 @@ export async function fetchIngredientsForRangeAction(
           if (!ri.ingredient) continue
           const ing = ri.ingredient
           
-          // Add as recipe ingredient (unique by ingredient + recipe + meal_date)
-          const key = `recipe-${ing.id}-${recipe.id}-${mealDate}`
-          if (!ingredientMap.has(key)) {
-            ingredientMap.set(key, {
-              id: ing.id,
-              name: ing.name,
-              type: ing.type,
-              measurement: ing.measurement,
-              items_in_stock: ing.items_in_stock,
-              add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
-              add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
-              source: 'recipe',
-              recipe_name: recipe.name,
-              recipe_amount: ri.amount,
-              meal_date: mealDate,
-              prep_date: prepDate
-            })
-          }
+          const item = ensureIngredient(ing)
+          item.sources.push({
+            type: 'recipe',
+            recipe_name: recipe.name,
+            recipe_amount: ri.amount,
+            prep_date: prepDate
+          })
+          item.total_recipe_amount += ri.amount
         }
       }
     }
@@ -188,18 +193,10 @@ export async function fetchIngredientsForRangeAction(
     // Add per-person ingredients
     for (const ing of shoppingIngredients) {
       if ((ing.add_to_shopping_list_per_person || 0) > 0) {
-        const key = `per_person-${ing.id}`
-        if (!ingredientMap.has(key)) {
-          ingredientMap.set(key, {
-            id: ing.id,
-            name: ing.name,
-            type: ing.type,
-            measurement: ing.measurement,
-            items_in_stock: ing.items_in_stock,
-            add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
-            add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
-            source: 'per_person'
-          })
+        const item = ensureIngredient(ing)
+        // Only add per_person source if not already present
+        if (!item.sources.some(s => s.type === 'per_person')) {
+          item.sources.push({ type: 'per_person' })
         }
       }
     }
@@ -207,29 +204,17 @@ export async function fetchIngredientsForRangeAction(
     // Add per-week ingredients
     for (const ing of shoppingIngredients) {
       if ((ing.add_to_shopping_list_per_week || 0) > 0) {
-        const key = `per_week-${ing.id}`
-        if (!ingredientMap.has(key)) {
-          ingredientMap.set(key, {
-            id: ing.id,
-            name: ing.name,
-            type: ing.type,
-            measurement: ing.measurement,
-            items_in_stock: ing.items_in_stock,
-            add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
-            add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
-            source: 'per_week'
-          })
+        const item = ensureIngredient(ing)
+        // Only add per_week source if not already present
+        if (!item.sources.some(s => s.type === 'per_week')) {
+          item.sources.push({ type: 'per_week' })
         }
       }
     }
 
     const ingredients = Array.from(ingredientMap.values())
-    // Sort by source, then type, then name
+    // Sort by type, then name
     ingredients.sort((a, b) => {
-      const sourceOrder = { recipe: 0, per_person: 1, per_week: 2 }
-      if (sourceOrder[a.source] !== sourceOrder[b.source]) {
-        return sourceOrder[a.source] - sourceOrder[b.source]
-      }
       if (a.type !== b.type) return a.type.localeCompare(b.type)
       return a.name.localeCompare(b.name)
     })
