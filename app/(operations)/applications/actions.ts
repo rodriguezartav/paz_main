@@ -74,8 +74,13 @@ export async function acceptApplicationAndCreateResident(
   // - Otherwise -> use the recommendedResidentType from rate calculation (which considers stay length)
   let residentType: ResidentType = recommendedResidentType
   for (const answer of application.answers || []) {
-    const optionsStr = JSON.stringify(answer.question_options_snapshot || []).toLowerCase()
-    if (optionsStr.includes('volunteer') && optionsStr.includes('resident')) {
+    // Check if this is the type question by looking at question text or nested question options
+    const questionText = answer.question_text_snapshot.toLowerCase()
+    const hasTypeKeywords = questionText.includes('type') || questionText.includes('applying as')
+    const optionsStr = answer.question?.options ? JSON.stringify(answer.question.options).toLowerCase() : ''
+    const hasVolunteerResidentOptions = optionsStr.includes('volunteer') && optionsStr.includes('resident')
+    
+    if (hasTypeKeywords || hasVolunteerResidentOptions) {
       try {
         const parsed = JSON.parse(String(answer.answer_value))
         const typeStr = (Array.isArray(parsed) ? parsed.join(', ') : String(parsed)).toLowerCase()
