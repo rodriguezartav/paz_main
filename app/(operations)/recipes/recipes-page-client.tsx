@@ -53,12 +53,12 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
       if (data.id) {
         await updateRecipeAction(
           data.id,
-          { name: data.name, english_name: data.english_name, type: data.type, description: data.description, notes: data.notes },
+          { name: data.name, english_name: data.english_name, type: data.type, meal_type: data.meal_type, description: data.description, notes: data.notes },
           data.recipe_ingredients
         )
       } else {
         await createRecipeAction(
-          { name: data.name, english_name: data.english_name, type: data.type, description: data.description, notes: data.notes },
+          { name: data.name, english_name: data.english_name, type: data.type, meal_type: data.meal_type, description: data.description, notes: data.notes },
           data.recipe_ingredients
         )
       }
