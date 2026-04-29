@@ -41,16 +41,17 @@ export function DashboardClient({
   startDate,
   endDate,
 }: DashboardClientProps) {
-  // Generate array of next 7 days
+  // Generate array of next 7 days using UTC to avoid hydration mismatches
   const days: { date: Date; dateString: string; label: string }[] = []
-  const today = new Date(startDate)
+  const today = new Date(startDate + 'T00:00:00Z')
   for (let i = 0; i < 7; i++) {
     const date = new Date(today)
-    date.setDate(date.getDate() + i)
+    date.setUTCDate(date.getUTCDate() + i)
+    const dateString = date.toISOString().split('T')[0]
     days.push({
       date,
-      dateString: date.toISOString().split('T')[0],
-      label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      dateString,
+      label: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
     })
   }
 
