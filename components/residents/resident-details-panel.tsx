@@ -27,7 +27,7 @@ import {
   DoorOpen, Edit, ExternalLink, AlertCircle, Loader2, DollarSign, Receipt, Plus
 } from 'lucide-react'
 import type { ApplicationAnswer } from '@/lib/types'
-import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction, assignBedToResidentAction, updateResidentStayAction } from '@/app/(operations)/residents/actions'
+import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction, assignBedToResidentAction, updateResidentStayAction, createStayBillAction } from '@/app/(operations)/residents/actions'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { ResidentType } from '@/lib/types'
@@ -184,6 +184,18 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
   const handleCheckOut = () => {
     startTransition(async () => {
       await markResidentCheckedOutAction(resident.id)
+    })
+  }
+
+  const handleCreateStayBill = () => {
+    if (!resident.nightly_rate) return
+    startTransition(async () => {
+      await createStayBillAction(
+        resident.id,
+        resident.arrival_date,
+        resident.departure_date,
+        resident.nightly_rate
+      )
     })
   }
 
@@ -651,6 +663,19 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
             <Button variant="outline">
               <CreditCard className="mr-2 h-4 w-4" />
               Update Payment
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleCreateStayBill}
+              disabled={isPending || !resident.nightly_rate}
+              title={!resident.nightly_rate ? 'Set nightly rate first' : 'Create bill from stay dates and rate'}
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Receipt className="mr-2 h-4 w-4" />
+              )}
+              Create Stay Bill
             </Button>
             <Button 
               variant="outline" 

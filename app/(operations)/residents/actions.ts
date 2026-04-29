@@ -1,6 +1,6 @@
 'use server'
 
-import { deleteResident, updateResident, assignResidentToBed } from '@/lib/db/queries'
+import { deleteResident, updateResident, assignResidentToBed, createResidentBill } from '@/lib/db/queries'
 import { revalidatePath } from 'next/cache'
 
 export async function deleteResidentAction(id: string) {
@@ -60,4 +60,43 @@ export async function updateResidentStayAction(
   revalidatePath('/residents')
   revalidatePath(`/residents/${id}`)
   revalidatePath('/dashboard')
+}
+
+export async function createStayBillAction(
+  residentId: string,
+  arrivalDate: string,
+  departureDate: string,
+  nightlyRate: number
+) {
+  // Calculate nights
+  const arrival = new Date(arrivalDate)
+  const departure = new Date(departureDate)
+  const nights = Math.ceil((departure.getTime() - arrival.getTime()) / (1000 * 60 * 60 * 24))
+  
+  if (nights <= 0) {
+    throw new Error('Invalid date range')
+  }
+  
+  const amount = nights * nightlyRate
+  const tax = 0 // No tax by default
+  const total = amount + tax
+  
+  const bill = await createResidentBill({
+    resident_id: residentId,
+    description: `Stay: ${nights} nights @ $${nightlyRate}/night (${arrivalDate} to ${departureDate})`,
+    amount,
+    tax,
+    total,
+    amount_paid: 0,
+    amount_due: total,
+    status: 'unpaid',
+    payment_details: null,
+    due_date: arrivalDate, // Due on arrival
+  })
+  
+  revalidatePath('/residents')
+  revalidatePath(`/residents/${residentId}`)
+  revalidatePath('/bills')
+  
+  return bill
 }
