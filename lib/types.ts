@@ -282,6 +282,7 @@ export interface WeeklyMealPlanMeal {
   weekly_meal_plan_id: string
   day_of_week: DayOfWeek
   meal_type: MealType
+  meal_date: string | null
   headcount_eats_all: number
   headcount_vegetarian: number
   headcount_vegan: number
@@ -373,6 +374,32 @@ export interface ScheduledActivity {
   signup_enabled: boolean
   created_at: string
   updated_at: string
+}
+
+// Shopping List Types
+export interface ShoppingListCalculatedItem {
+  ingredient_id: string
+  name: string
+  type: IngredientType
+  measurement: Measurement
+  recipe_amount: number
+  per_person_amount: number
+  weekly_amount: number
+  total_needed: number
+  items_in_stock: number
+  final_amount_to_buy: number
+  source_breakdown: {
+    recipes: { name: string; amount: number }[]
+    per_person_days: { date: string; people: number; amount: number }[]
+    weekly: number
+  }
+}
+
+export interface ShoppingListResult {
+  items: ShoppingListCalculatedItem[]
+  date_range: { start: string; end: string }
+  weekly_meal_plan_id: string
+  generated_at: string
 }
 
 // Resident Price Modifier Types

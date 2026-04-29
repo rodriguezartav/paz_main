@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, X, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar, KeyRound } from 'lucide-react'
+import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, X, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar, KeyRound, ShoppingCart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navSections = [
@@ -24,6 +24,7 @@ const navSections = [
       { href: '/recipes', label: 'Recipes', icon: ChefHat },
       { href: '/meal-planner', label: 'Meal Planner', icon: CalendarDays },
       { href: '/weekly-calendar', label: 'Weekly Calendar', icon: Calendar },
+      { href: '/shopping-list', label: 'Shopping List', icon: ShoppingCart },
     ],
   },
   {
