@@ -30,6 +30,8 @@ type RangeIngredient = {
   source: 'recipe' | 'per_person' | 'per_week'
   recipe_name?: string
   recipe_amount?: number
+  meal_date?: string
+  prep_date?: string
 }
 
 function getDateForDayOfWeek(weekStartDate: string, dayIndex: number): string {
@@ -483,9 +485,17 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
             ) : (
               filteredIngredients.map((ing, idx) => {
                 const rangeIng = ing as RangeIngredient
+                // For recipes, show recipe name with meal date (and prep date if different)
+                const getRecipeLabel = () => {
+                  const name = rangeIng.recipe_name || 'Recipe'
+                  if (rangeIng.meal_date && rangeIng.prep_date && rangeIng.meal_date !== rangeIng.prep_date) {
+                    return `${name} (prep ${formatDate(rangeIng.prep_date).split(',')[0]})`
+                  }
+                  return name
+                }
                 const sourceLabel = rangeLoaded 
                   ? rangeIng.source === 'recipe' 
-                    ? rangeIng.recipe_name || 'Recipe'
+                    ? getRecipeLabel()
                     : rangeIng.source === 'per_person' 
                       ? 'Per Person/Day'
                       : 'Per Week'
