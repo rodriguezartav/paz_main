@@ -52,6 +52,7 @@ export async function updateResidentStayAction(
     departure_date?: string
     resident_type?: 'volunteer' | 'resident' | 'retreat'
     resident_since?: string | null
+    nightly_rate?: number | null
     notes?: string | null
   }
 ) {

@@ -24,7 +24,7 @@ import {
   User, Mail, Phone, AlertTriangle, 
   Calendar, MapPin, FileText, 
   CheckCircle2, XCircle, CreditCard,
-  DoorOpen, Edit, ExternalLink, AlertCircle, Loader2
+  DoorOpen, Edit, ExternalLink, AlertCircle, Loader2, DollarSign
 } from 'lucide-react'
 import type { ApplicationAnswer } from '@/lib/types'
 import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction, assignBedToResidentAction, updateResidentStayAction } from '@/app/(operations)/residents/actions'
@@ -153,6 +153,7 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
   const [editDepartureDate, setEditDepartureDate] = useState(resident.departure_date)
   const [editResidentType, setEditResidentType] = useState<ResidentType>(resident.resident_type || 'resident')
   const [editResidentSince, setEditResidentSince] = useState(resident.resident_since || '')
+  const [editNightlyRate, setEditNightlyRate] = useState<number | null>(resident.nightly_rate)
   const [editNotes, setEditNotes] = useState(resident.notes || '')
   
   // Get unique buildings from rooms
@@ -218,6 +219,7 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
     setEditDepartureDate(resident.departure_date)
     setEditResidentType(resident.resident_type || 'resident')
     setEditResidentSince(resident.resident_since || '')
+    setEditNightlyRate(resident.nightly_rate)
     setEditNotes(resident.notes || '')
     setShowEditStayDialog(true)
   }
@@ -229,6 +231,7 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
         departure_date: editDepartureDate,
         resident_type: editResidentType,
         resident_since: editResidentSince || null,
+        nightly_rate: editNightlyRate,
         notes: editNotes || null
       })
       setShowEditStayDialog(false)
@@ -359,6 +362,15 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
                   </div>
                 </div>
               )}
+              <div className="flex items-center gap-3">
+                <DollarSign className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Nightly Rate</p>
+                  <p className="text-card-foreground">
+                    {resident.nightly_rate != null ? `$${resident.nightly_rate}` : 'Not set'}
+                  </p>
+                </div>
+              </div>
             </div>
             {resident.notes && (
               <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-3">
@@ -745,6 +757,23 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
                   type="date"
                   value={editResidentSince}
                   onChange={(e) => setEditResidentSince(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nightly_rate">Nightly Rate</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  id="nightly_rate"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={editNightlyRate ?? ''}
+                  onChange={(e) => setEditNightlyRate(e.target.value ? parseFloat(e.target.value) : null)}
+                  className="pl-7"
+                  placeholder="Enter nightly rate"
                 />
               </div>
             </div>
