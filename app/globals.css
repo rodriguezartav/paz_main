@@ -7,7 +7,7 @@
 :root {
   /* Core Paz colors */
   --paz-sand: #EDE5D5;
-  --paz-sage: #E4E5DC;
+  --paz-sage: #DFE6D8;
   --paz-text: #403B3A;
   --paz-muted: #6F6A63;
   --paz-clay: #C38E6A;
@@ -17,7 +17,7 @@
   --paz-lavender: #817D90;
   
   /* Semantic tokens mapped to Paz colors */
-  --background: #E4E5DC;
+  --background: #DFE6D8;
   --foreground: #403B3A;
   --card: #FFFDF9;
   --card-foreground: #403B3A;
