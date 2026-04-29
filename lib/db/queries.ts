@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection, WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, DayOfWeek, MealType, WeeklyMealPlan, WeeklyMealPlanMeal, WeeklyMealPlanRecipe, DietHeadcount } from '@/lib/types'
+import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection, WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, DayOfWeek, MealType, WeeklyMealPlan, WeeklyMealPlanMeal, WeeklyMealPlanRecipe, DietHeadcount, RateRule } from '@/lib/types'
 
 // Resident queries
 export async function getResidents(): Promise<Resident[]> {
@@ -1755,4 +1755,63 @@ export async function refreshMealPlanHeadcounts(planId: string): Promise<void> {
       .eq('weekly_meal_plan_id', planId)
       .eq('day_of_week', days[i])
   }
+}
+
+// Rate Rule queries
+export async function getRateRules(): Promise<RateRule[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('rate_rules')
+    .select('*')
+    .order('application_type', { ascending: true })
+    .order('room_type', { ascending: true })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getRateRuleById(id: string): Promise<RateRule | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('rate_rules')
+    .select('*')
+    .eq('id', id)
+    .single()
+  
+  if (error) return null
+  return data
+}
+
+export async function createRateRule(
+  rule: Omit<RateRule, 'id' | 'created_at' | 'updated_at'>
+): Promise<RateRule> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('rate_rules')
+    .insert(rule)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function updateRateRule(
+  id: string,
+  updates: Partial<Omit<RateRule, 'id' | 'created_at' | 'updated_at'>>
+): Promise<RateRule> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('rate_rules')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function toggleRateRuleActive(id: string, isActive: boolean): Promise<RateRule> {
+  return updateRateRule(id, { is_active: isActive })
 }
