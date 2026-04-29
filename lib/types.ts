@@ -2,6 +2,7 @@
 export type Gender = 'female' | 'male'
 export type Diet = 'eats_all' | 'vegetarian' | 'vegan'
 export type ResidentStatus = 'upcoming' | 'checked_in' | 'staying' | 'checking_out_today' | 'checked_out' | 'cancelled'
+export type ResidentType = 'volunteer' | 'resident' | 'retreat'
 export type PaymentStatus = 'unpaid' | 'deposit_paid' | 'partially_paid' | 'paid' | 'refunded'
 export type PaymentMethod = 'cash' | 'sinpe' | 'bank_transfer' | 'paypal' | 'stripe' | 'other'
 
@@ -20,6 +21,7 @@ export interface Resident {
   room: string | null
   bed: string | null
   status: ResidentStatus
+  resident_type: ResidentType
   check_in_completed: boolean
   release_accepted: boolean
   health_insurance_confirmed: boolean

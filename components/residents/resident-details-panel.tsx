@@ -27,7 +27,10 @@ import {
   DoorOpen, Edit, ExternalLink, AlertCircle, Loader2
 } from 'lucide-react'
 import type { ApplicationAnswer } from '@/lib/types'
-import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction, assignBedToResidentAction } from '@/app/(operations)/residents/actions'
+import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction, assignBedToResidentAction, updateResidentStayAction } from '@/app/(operations)/residents/actions'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import type { ResidentType } from '@/lib/types'
 
 interface ResidentDetailsPanelProps {
   resident: Resident
@@ -144,6 +147,13 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
   const [selectedRoomId, setSelectedRoomId] = useState('')
   const [selectedBedId, setSelectedBedId] = useState('')
   
+  // Edit Stay Dialog state
+  const [showEditStayDialog, setShowEditStayDialog] = useState(false)
+  const [editArrivalDate, setEditArrivalDate] = useState(resident.arrival_date)
+  const [editDepartureDate, setEditDepartureDate] = useState(resident.departure_date)
+  const [editResidentType, setEditResidentType] = useState<ResidentType>(resident.resident_type || 'resident')
+  const [editNotes, setEditNotes] = useState(resident.notes || '')
+  
   // Get unique buildings from rooms
   const buildings = rooms.reduce((acc, room) => {
     if (room.building && !acc.find(b => b.id === room.building!.id)) {
@@ -200,6 +210,26 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
   const handleRoomChange = (roomId: string) => {
     setSelectedRoomId(roomId)
     setSelectedBedId('')
+  }
+
+  const openEditStayDialog = () => {
+    setEditArrivalDate(resident.arrival_date)
+    setEditDepartureDate(resident.departure_date)
+    setEditResidentType(resident.resident_type || 'resident')
+    setEditNotes(resident.notes || '')
+    setShowEditStayDialog(true)
+  }
+
+  const handleSaveStay = () => {
+    startTransition(async () => {
+      await updateResidentStayAction(resident.id, {
+        arrival_date: editArrivalDate,
+        departure_date: editDepartureDate,
+        resident_type: editResidentType,
+        notes: editNotes || null
+      })
+      setShowEditStayDialog(false)
+    })
   }
 
   return (
@@ -268,7 +298,7 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Stay</CardTitle>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={openEditStayDialog}>
               <Edit className="mr-1 h-4 w-4" />
               Edit
             </Button>
@@ -308,6 +338,13 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
                   ) : (
                     <p className="text-muted-foreground">Not assigned</p>
                   )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Resident Type</p>
+                  <p className="text-card-foreground capitalize">{resident.resident_type || 'resident'}</p>
                 </div>
               </div>
             </div>
@@ -638,6 +675,83 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
                 <MapPin className="mr-2 h-4 w-4" />
               )}
               Assign Bed
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Stay Dialog */}
+      <Dialog open={showEditStayDialog} onOpenChange={setShowEditStayDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Stay Details</DialogTitle>
+            <DialogDescription>
+              Update stay information for {resident.name}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="arrival_date">Arrival Date</Label>
+                <Input
+                  id="arrival_date"
+                  type="date"
+                  value={editArrivalDate}
+                  onChange={(e) => setEditArrivalDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="departure_date">Departure Date</Label>
+                <Input
+                  id="departure_date"
+                  type="date"
+                  value={editDepartureDate}
+                  onChange={(e) => setEditDepartureDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Resident Type</Label>
+              <Select value={editResidentType} onValueChange={(value) => setEditResidentType(value as ResidentType)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="resident">Resident</SelectItem>
+                  <SelectItem value="volunteer">Volunteer</SelectItem>
+                  <SelectItem value="retreat">Retreat</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Add notes about this stay..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditStayDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveStay}
+              disabled={isPending}
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Edit className="mr-2 h-4 w-4" />
+              )}
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

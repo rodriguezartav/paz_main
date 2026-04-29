@@ -44,3 +44,18 @@ export async function assignBedToResidentAction(residentId: string, bedId: strin
   revalidatePath('/rooms')
   revalidatePath('/dashboard')
 }
+
+export async function updateResidentStayAction(
+  id: string,
+  data: {
+    arrival_date?: string
+    departure_date?: string
+    resident_type?: 'volunteer' | 'resident' | 'retreat'
+    notes?: string | null
+  }
+) {
+  await updateResident(id, data)
+  revalidatePath('/residents')
+  revalidatePath(`/residents/${id}`)
+  revalidatePath('/dashboard')
+}
