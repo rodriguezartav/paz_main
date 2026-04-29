@@ -27,7 +27,10 @@ export async function updateUserAction(
   updates: { name?: string | null; role?: 'admin' | 'user'; active?: boolean }
 ): Promise<{ user?: User; error?: string }> {
   try {
-    const user = await updateUser(id, updates)
+    const user = await updateUser(id, {
+      ...updates,
+      name: updates.name ?? undefined
+    })
     revalidatePath('/users')
     return { user }
   } catch (error) {
