@@ -27,9 +27,8 @@ type RangeIngredient = {
   items_in_stock: number | null
   add_to_shopping_list_per_person: number | null
   add_to_shopping_list_per_week: number | null
-  source: 'recipe' | 'per_person' | 'per_week'
-  recipe_name?: string
-  recipe_amount?: number
+  sources: Array<{ type: 'recipe' | 'per_person' | 'per_week'; recipe_name?: string; recipe_amount?: number; prep_date?: string }>
+  total_recipe_amount: number
 }
 
 function getDateForDayOfWeek(weekStartDate: string, dayIndex: number): string {
@@ -465,14 +464,14 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
           <div className="max-h-[400px] overflow-y-auto rounded-lg border">
             <div className={cn(
               "grid gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sticky top-0",
-              rangeLoaded ? "grid-cols-12" : "grid-cols-12"
+              rangeLoaded ? "grid-cols-9 md:grid-cols-12" : "grid-cols-9 md:grid-cols-12"
             )}>
-              <div className={rangeLoaded ? "col-span-3" : "col-span-4"}>Name</div>
-              {rangeLoaded && <div className="col-span-3">Source</div>}
+              <div className={rangeLoaded ? "col-span-3 md:col-span-3" : "col-span-4"}>Name</div>
+              {rangeLoaded && <div className="hidden md:block col-span-3">Source</div>}
               <div className="col-span-2">Type</div>
               <div className="col-span-1">Unit</div>
               <div className="col-span-1 text-center">Per Person</div>
-              <div className="col-span-2 text-center">In Stock</div>
+              <div className="col-span-2">In Stock</div>
             </div>
             {filteredIngredients.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
@@ -481,28 +480,54 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
                   : 'No ingredients found. Adjust filters or add shopping flags to ingredients.'}
               </div>
             ) : (
-              filteredIngredients.map((ing, idx) => {
+              filteredIngredients.map((ing) => {
                 const rangeIng = ing as RangeIngredient
-                const sourceLabel = rangeLoaded 
-                  ? rangeIng.source === 'recipe' 
-                    ? rangeIng.recipe_name || 'Recipe'
-                    : rangeIng.source === 'per_person' 
-                      ? 'Per Person/Day'
-                      : 'Per Week'
-                  : null
-                const sourceBadgeColor = rangeLoaded
-                  ? rangeIng.source === 'recipe'
+                
+                // Build source labels from the sources array
+                const getSourceLabel = () => {
+                  if (!rangeLoaded || !rangeIng.sources || rangeIng.sources.length === 0) return null
+                  
+                  const recipeSources = rangeIng.sources.filter(s => s.type === 'recipe')
+                  const hasPerPerson = rangeIng.sources.some(s => s.type === 'per_person')
+                  const hasPerWeek = rangeIng.sources.some(s => s.type === 'per_week')
+                  
+                  const parts: string[] = []
+                  if (recipeSources.length > 0) {
+                    const recipeNames = [...new Set(recipeSources.map(s => s.recipe_name || 'Recipe'))]
+                    parts.push(recipeNames.length > 2 ? `${recipeNames.length} recipes` : recipeNames.join(', '))
+                  }
+                  if (hasPerPerson) parts.push('Per Person')
+                  if (hasPerWeek) parts.push('Per Week')
+                  
+                  return parts.join(' + ')
+                }
+                
+                const sourceLabel = getSourceLabel()
+                
+                // Determine badge color based on primary source type
+                const getPrimarySourceType = () => {
+                  if (!rangeIng.sources || rangeIng.sources.length === 0) return null
+                  if (rangeIng.sources.some(s => s.type === 'recipe')) return 'recipe'
+                  if (rangeIng.sources.some(s => s.type === 'per_person')) return 'per_person'
+                  return 'per_week'
+                }
+                const primarySource = getPrimarySourceType()
+                const sourceBadgeColor = rangeLoaded && primarySource
+                  ? primarySource === 'recipe'
                     ? 'bg-blue-100 text-blue-800'
-                    : rangeIng.source === 'per_person'
+                    : primarySource === 'per_person'
                       ? 'bg-green-100 text-green-800'
                       : 'bg-purple-100 text-purple-800'
                   : ''
                 
                 return (
-                  <div key={`${ing.id}-${idx}`} className="grid grid-cols-12 gap-2 items-center border-b px-4 py-2 hover:bg-muted/30">
-                    <div className={cn("font-medium truncate", rangeLoaded ? "col-span-3" : "col-span-4")}>{ing.name}</div>
+                  <div key={ing.id} className={cn(
+                    "grid gap-2 items-center border-b px-4 py-2 hover:bg-muted/30",
+                    rangeLoaded ? "grid-cols-9 md:grid-cols-12" : "grid-cols-9 md:grid-cols-12"
+                  )}>
+                    <div className={cn("font-medium truncate", rangeLoaded ? "col-span-3 md:col-span-3" : "col-span-4")}>{ing.name}</div>
                     {rangeLoaded && (
-                      <div className="col-span-3">
+                      <div className="hidden md:block col-span-3">
                         <Badge variant="outline" className={cn("text-xs truncate max-w-full", sourceBadgeColor)}>
                           {sourceLabel}
                         </Badge>
@@ -515,8 +540,8 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
                     </div>
                     <div className="col-span-1 text-sm text-muted-foreground">{ing.measurement}</div>
                     <div className="col-span-1 text-sm text-muted-foreground text-center">
-                      {rangeLoaded && rangeIng.source === 'recipe' 
-                        ? rangeIng.recipe_amount?.toFixed(1) || '-'
+                      {rangeLoaded && rangeIng.total_recipe_amount > 0
+                        ? rangeIng.total_recipe_amount.toFixed(1)
                         : ing.add_to_shopping_list_per_person || '-'}
                     </div>
                     <div className="col-span-2">

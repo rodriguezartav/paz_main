@@ -2172,3 +2172,42 @@ export async function getActiveResidentsForDateRange(startDate: string, endDate:
   if (error) throw error
   return data?.length || 0
 }
+
+// Get meals where prep_date (meal_date - prep_day_offset) falls within date range
+// This requires fetching meals that might be served after endDate but prepped within range
+export async function getMealsWithPrepDateInRange(
+  startDate: string, 
+  endDate: string,
+  maxPrepDayOffset: number = 7
+): Promise<WeeklyMealPlanMeal[]> {
+  const supabase = await createClient()
+  
+  // Calculate the extended end date to capture meals with prep_day_offset
+  // If endDate is May 10 and max offset is 7, we need meals up to May 17
+  const [ey, em, ed] = endDate.split('-').map(Number)
+  const extendedEnd = new Date(ey, em - 1, ed)
+  extendedEnd.setDate(extendedEnd.getDate() + maxPrepDayOffset)
+  const extendedEndStr = `${extendedEnd.getFullYear()}-${String(extendedEnd.getMonth() + 1).padStart(2, '0')}-${String(extendedEnd.getDate()).padStart(2, '0')}`
+  
+  const { data, error } = await supabase
+    .from('weekly_meal_plan_meals')
+    .select(`
+      *,
+      recipes:weekly_meal_plan_recipes(
+        *,
+        recipe:recipes(
+          *,
+          recipe_ingredients(
+            *,
+            ingredient:ingredients(*)
+          )
+        )
+      )
+    `)
+    .gte('meal_date', startDate)
+    .lte('meal_date', extendedEndStr)
+    .order('meal_date')
+  
+  if (error) throw error
+  return data || []
+}

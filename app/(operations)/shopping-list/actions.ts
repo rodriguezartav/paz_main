@@ -6,7 +6,8 @@ import {
   updateIngredientStock, 
   bulkUpdateIngredientStock,
   getShoppingRelevantIngredients,
-  getActiveResidentsForDateRange
+  getActiveResidentsForDateRange,
+  getMealsWithPrepDateInRange
 } from '@/lib/db/queries'
 import type { 
   ShoppingListCalculatedItem, 
@@ -47,6 +48,23 @@ function getDayOfWeekFromDate(weekStartDate: string, date: string): DayOfWeek | 
 
 function getMealTotalHeadcount(meal: WeeklyMealPlanMeal): number {
   return (meal.headcount_eats_all || 0) + (meal.headcount_vegetarian || 0) + (meal.headcount_vegan || 0)
+}
+
+// Calculate the prep date for a meal (meal_date - prep_day_offset)
+function getPrepDate(mealDate: string, prepDayOffset: number): string {
+  const [year, month, day] = mealDate.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  date.setDate(date.getDate() - prepDayOffset)
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+// Check if a prep date falls within a date range
+function isPrepDateInRange(mealDate: string, prepDayOffset: number, rangeStart: string, rangeEnd: string): boolean {
+  const prepDate = getPrepDate(mealDate, prepDayOffset)
+  return prepDate >= rangeStart && prepDate <= rangeEnd
 }
 
 export async function updateIngredientStockAction(
@@ -90,21 +108,19 @@ export async function fetchIngredientsForRangeAction(
     items_in_stock: number | null
     add_to_shopping_list_per_person: number | null
     add_to_shopping_list_per_week: number | null
-    source: 'recipe' | 'per_person' | 'per_week'
-    recipe_name?: string
-    recipe_amount?: number
+    sources: Array<{ type: 'recipe' | 'per_person' | 'per_week'; recipe_name?: string; recipe_amount?: number; prep_date?: string }>
+    total_recipe_amount: number
   }>
   error?: string 
 }> {
   try {
-    const mealPlan = await getWeeklyMealPlanWithMealsForShoppingList(weeklyMealPlanId)
-    if (!mealPlan) {
-      return { success: false, error: 'Weekly meal plan not found' }
-    }
-
+    // Fetch meals where prep_date falls within our shopping range
+    // This includes meals from current week AND next week if their prep_day_offset puts them in range
+    const meals = await getMealsWithPrepDateInRange(startDate, endDate)
+    
     const shoppingIngredients = await getShoppingRelevantIngredients()
     
-    // Track unique ingredients with their sources
+    // Track unique ingredients by ID, consolidating sources
     const ingredientMap = new Map<string, {
       id: string
       name: string
@@ -113,42 +129,63 @@ export async function fetchIngredientsForRangeAction(
       items_in_stock: number | null
       add_to_shopping_list_per_person: number | null
       add_to_shopping_list_per_week: number | null
-      source: 'recipe' | 'per_person' | 'per_week'
-      recipe_name?: string
-      recipe_amount?: number
+      sources: Array<{ type: 'recipe' | 'per_person' | 'per_week'; recipe_name?: string; recipe_amount?: number; prep_date?: string }>
+      total_recipe_amount: number
     }>()
 
-    // Get meals in range
-    for (const meal of mealPlan.meals || []) {
-      const mealDate = getDateForDayOfWeek(mealPlan.week_start_date, meal.day_of_week)
-      if (mealDate >= startDate && mealDate <= endDate) {
-        if (!meal.recipes) continue
-        
-        for (const recipeEntry of meal.recipes) {
-          const recipe = recipeEntry.recipe
-          if (!recipe || !recipe.recipe_ingredients) continue
+    // Helper to ensure ingredient exists
+    const ensureIngredient = (ing: { 
+      id: string; name: string; type: string; measurement: string; 
+      items_in_stock: number | null; add_to_shopping_list_per_person: number | null; add_to_shopping_list_per_week: number | null 
+    }) => {
+      if (!ingredientMap.has(ing.id)) {
+        ingredientMap.set(ing.id, {
+          id: ing.id,
+          name: ing.name,
+          type: ing.type,
+          measurement: ing.measurement,
+          items_in_stock: ing.items_in_stock,
+          add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
+          add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
+          sources: [],
+          total_recipe_amount: 0
+        })
+      }
+      return ingredientMap.get(ing.id)!
+    }
 
-          for (const ri of recipe.recipe_ingredients) {
-            if (!ri.ingredient) continue
-            const ing = ri.ingredient
-            
-            // Add as recipe ingredient (if not already there from a different source)
-            const key = `recipe-${ing.id}-${recipe.id}`
-            if (!ingredientMap.has(key)) {
-              ingredientMap.set(key, {
-                id: ing.id,
-                name: ing.name,
-                type: ing.type,
-                measurement: ing.measurement,
-                items_in_stock: ing.items_in_stock,
-                add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
-                add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
-                source: 'recipe',
-                recipe_name: recipe.name,
-                recipe_amount: ri.amount
-              })
-            }
-          }
+    // Process meals where prep_date (meal_date - prep_day_offset) falls in range
+    for (const meal of meals) {
+      const mealDate = meal.meal_date
+      if (!mealDate) continue
+      
+      const prepDayOffset = meal.prep_day_offset || 0
+      
+      // Check if prep_date falls within our shopping range
+      if (!isPrepDateInRange(mealDate, prepDayOffset, startDate, endDate)) {
+        continue
+      }
+      
+      if (!meal.recipes) continue
+      
+      const prepDate = getPrepDate(mealDate, prepDayOffset)
+      
+      for (const recipeEntry of meal.recipes) {
+        const recipe = recipeEntry.recipe
+        if (!recipe || !recipe.recipe_ingredients) continue
+
+        for (const ri of recipe.recipe_ingredients) {
+          if (!ri.ingredient) continue
+          const ing = ri.ingredient
+          
+          const item = ensureIngredient(ing)
+          item.sources.push({
+            type: 'recipe',
+            recipe_name: recipe.name,
+            recipe_amount: ri.amount,
+            prep_date: prepDate
+          })
+          item.total_recipe_amount += ri.amount
         }
       }
     }
@@ -156,18 +193,10 @@ export async function fetchIngredientsForRangeAction(
     // Add per-person ingredients
     for (const ing of shoppingIngredients) {
       if ((ing.add_to_shopping_list_per_person || 0) > 0) {
-        const key = `per_person-${ing.id}`
-        if (!ingredientMap.has(key)) {
-          ingredientMap.set(key, {
-            id: ing.id,
-            name: ing.name,
-            type: ing.type,
-            measurement: ing.measurement,
-            items_in_stock: ing.items_in_stock,
-            add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
-            add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
-            source: 'per_person'
-          })
+        const item = ensureIngredient(ing)
+        // Only add per_person source if not already present
+        if (!item.sources.some(s => s.type === 'per_person')) {
+          item.sources.push({ type: 'per_person' })
         }
       }
     }
@@ -175,29 +204,17 @@ export async function fetchIngredientsForRangeAction(
     // Add per-week ingredients
     for (const ing of shoppingIngredients) {
       if ((ing.add_to_shopping_list_per_week || 0) > 0) {
-        const key = `per_week-${ing.id}`
-        if (!ingredientMap.has(key)) {
-          ingredientMap.set(key, {
-            id: ing.id,
-            name: ing.name,
-            type: ing.type,
-            measurement: ing.measurement,
-            items_in_stock: ing.items_in_stock,
-            add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
-            add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
-            source: 'per_week'
-          })
+        const item = ensureIngredient(ing)
+        // Only add per_week source if not already present
+        if (!item.sources.some(s => s.type === 'per_week')) {
+          item.sources.push({ type: 'per_week' })
         }
       }
     }
 
     const ingredients = Array.from(ingredientMap.values())
-    // Sort by source, then type, then name
+    // Sort by type, then name
     ingredients.sort((a, b) => {
-      const sourceOrder = { recipe: 0, per_person: 1, per_week: 2 }
-      if (sourceOrder[a.source] !== sourceOrder[b.source]) {
-        return sourceOrder[a.source] - sourceOrder[b.source]
-      }
       if (a.type !== b.type) return a.type.localeCompare(b.type)
       return a.name.localeCompare(b.name)
     })
@@ -215,11 +232,9 @@ export async function generateShoppingListAction(
   endDate: string
 ): Promise<{ success: boolean; result?: ShoppingListResult; error?: string }> {
   try {
-    // Fetch the weekly meal plan with all meals and recipes
-    const mealPlan = await getWeeklyMealPlanWithMealsForShoppingList(weeklyMealPlanId)
-    if (!mealPlan) {
-      return { success: false, error: 'Weekly meal plan not found' }
-    }
+    // Fetch meals where prep_date falls within our shopping range
+    // This includes meals from current week AND next week if their prep_day_offset puts them in range
+    const allMeals = await getMealsWithPrepDateInRange(startDate, endDate)
 
     // Fetch shopping-relevant ingredients (per-person and weekly flags)
     const shoppingIngredients = await getShoppingRelevantIngredients()
@@ -269,11 +284,22 @@ export async function generateShoppingListAction(
       current.setDate(current.getDate() + 1)
     }
 
-    // Group meals by date
+    // Filter meals where prep_date falls in our shopping range and group by date
     const mealsByDate = new Map<string, { brunch?: WeeklyMealPlanMeal; dinner?: WeeklyMealPlanMeal }>()
+    const mealsForRecipes: WeeklyMealPlanMeal[] = []
     
-    for (const meal of mealPlan.meals || []) {
-      const mealDate = getDateForDayOfWeek(mealPlan.week_start_date, meal.day_of_week)
+    for (const meal of allMeals) {
+      const mealDate = meal.meal_date
+      if (!mealDate) continue
+      
+      const prepDayOffset = meal.prep_day_offset || 0
+      
+      // Check if prep_date falls within our shopping range
+      if (isPrepDateInRange(mealDate, prepDayOffset, startDate, endDate)) {
+        mealsForRecipes.push(meal)
+      }
+      
+      // For headcount purposes, only count meals actually served in the date range
       if (mealDate >= startDate && mealDate <= endDate) {
         if (!mealsByDate.has(mealDate)) {
           mealsByDate.set(mealDate, {})
@@ -287,29 +313,29 @@ export async function generateShoppingListAction(
       }
     }
 
-    // A. Process scheduled recipes from meals
-    for (const [date, meals] of mealsByDate) {
-      for (const mealType of ['brunch', 'dinner'] as const) {
-        const meal = meals[mealType]
-        if (!meal || !meal.recipes) continue
+    // A. Process scheduled recipes from meals (based on prep_date in range)
+    for (const meal of mealsForRecipes) {
+      if (!meal.recipes) continue
+      
+      const mealDate = meal.meal_date!
+      const prepDayOffset = meal.prep_day_offset || 0
+      const prepDate = getPrepDate(mealDate, prepDayOffset)
+      const mealHeadcount = getMealTotalHeadcount(meal)
+      
+      for (const recipeEntry of meal.recipes) {
+        const recipe = recipeEntry.recipe
+        if (!recipe || !recipe.recipe_ingredients) continue
 
-        const mealHeadcount = getMealTotalHeadcount(meal)
-        
-        for (const recipeEntry of meal.recipes) {
-          const recipe = recipeEntry.recipe
-          if (!recipe || !recipe.recipe_ingredients) continue
-
-          for (const ri of recipe.recipe_ingredients) {
-            if (!ri.ingredient) continue
-            
-            const item = ensureIngredient(ri.ingredient)
-            const amount = ri.amount * mealHeadcount
-            item.recipe_amount += amount
-            item.source_breakdown.recipes.push({
-              name: `${recipe.name} (${date})`,
-              amount
-            })
-          }
+        for (const ri of recipe.recipe_ingredients) {
+          if (!ri.ingredient) continue
+          
+          const item = ensureIngredient(ri.ingredient)
+          const amount = ri.amount * mealHeadcount
+          item.recipe_amount += amount
+          item.source_breakdown.recipes.push({
+            name: `${recipe.name} (served ${mealDate}, prep ${prepDate})`,
+            amount
+          })
         }
       }
     }
