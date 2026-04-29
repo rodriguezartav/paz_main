@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, ShoppingCart, Package, ClipboardList, Copy, Check, Info, Search, Filter } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { WeeklyMealPlan, Ingredient, ShoppingListResult, IngredientType } from '@/lib/types'
-import { generateShoppingListAction, bulkUpdateIngredientStockAction } from './actions'
+import { generateShoppingListAction, bulkUpdateIngredientStockAction, fetchIngredientsForRangeAction } from './actions'
 
 interface ShoppingListPageClientProps {
   weeklyMealPlans: WeeklyMealPlan[]
@@ -18,6 +18,19 @@ interface ShoppingListPageClientProps {
 }
 
 const dayOfWeekOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
+
+type RangeIngredient = {
+  id: string
+  name: string
+  type: string
+  measurement: string
+  items_in_stock: number | null
+  add_to_shopping_list_per_person: number | null
+  add_to_shopping_list_per_week: number | null
+  source: 'recipe' | 'per_person' | 'per_week'
+  recipe_name?: string
+  recipe_amount?: number
+}
 
 function getDateForDayOfWeek(weekStartDate: string, dayIndex: number): string {
   const startDate = new Date(weekStartDate)
@@ -69,6 +82,10 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
   const [selectedPlanId, setSelectedPlanId] = useState<string>('')
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
+  const [rangeLoaded, setRangeLoaded] = useState(false)
+  
+  // Range ingredients (from recipes + per person + per week)
+  const [rangeIngredients, setRangeIngredients] = useState<RangeIngredient[]>([])
   
   // Inventory state
   const [inventorySearch, setInventorySearch] = useState('')
@@ -95,10 +112,13 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
   }
 
   // Filter ingredients for inventory section
-  const filteredIngredients = ingredients.filter(ing => {
+  // When range is loaded, show rangeIngredients; otherwise show default ingredients
+  const baseIngredients = rangeLoaded ? rangeIngredients : ingredients
+  const filteredIngredients = baseIngredients.filter(ing => {
     const matchesSearch = ing.name.toLowerCase().includes(inventorySearch.toLowerCase())
     const matchesType = inventoryTypeFilter === 'all' || ing.type === inventoryTypeFilter
-    const isRelevant = !showOnlyRelevant || 
+    // When range is loaded, show all loaded ingredients; otherwise filter by shopping flags
+    const isRelevant = rangeLoaded || !showOnlyRelevant || 
       (ing.add_to_shopping_list_per_person || 0) > 0 || 
       (ing.add_to_shopping_list_per_week || 0) > 0
     return matchesSearch && matchesType && isRelevant
@@ -114,6 +134,27 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
     }
     setShoppingList(null)
     setError(null)
+    setRangeLoaded(false)
+    setRangeIngredients([])
+  }
+
+  // Load ingredients for the selected range
+  const handleLoadRange = () => {
+    if (!selectedPlanId || !startDate || !endDate) {
+      setError('Please select a weekly calendar and date range')
+      return
+    }
+
+    startTransition(async () => {
+      setError(null)
+      const result = await fetchIngredientsForRangeAction(selectedPlanId, startDate, endDate)
+      if (result.success && result.ingredients) {
+        setRangeIngredients(result.ingredients)
+        setRangeLoaded(true)
+      } else {
+        setError(result.error || 'Failed to load ingredients')
+      }
+    })
   }
 
   // Handle stock input change
@@ -123,7 +164,7 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
   }
 
   // Get current stock value (from updates or original)
-  const getStockValue = (ingredient: Ingredient): string => {
+  const getStockValue = (ingredient: { id: string; items_in_stock: number | null }): string => {
     if (stockUpdates[ingredient.id] !== undefined) {
       return stockUpdates[ingredient.id]
     }
@@ -338,9 +379,29 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
             </div>
           </div>
           
-          <div className="flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-            <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-            <span>Per-person items use the greater headcount between brunch and dinner for each day.</span>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground flex-1">
+              <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>Per-person items use the greater headcount between brunch and dinner for each day.</span>
+            </div>
+            <Button
+              onClick={handleLoadRange}
+              disabled={isPending || !selectedPlanId || !startDate || !endDate}
+            >
+              {isPending && !rangeLoaded ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Loading...
+                </>
+              ) : rangeLoaded ? (
+                <>
+                  <Check className="h-4 w-4 mr-2 text-green-600" />
+                  Range Loaded
+                </>
+              ) : (
+                'Load Range'
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -353,7 +414,9 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
             Update Inventory
           </CardTitle>
           <CardDescription>
-            Update current stock levels before generating the shopping list.
+            {rangeLoaded 
+              ? `Showing ingredients from recipes, per-person, and per-week items for ${formatDate(startDate)} - ${formatDate(endDate)}. Update stock levels before generating.`
+              : 'Load a date range above to see all ingredients needed for that period.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -391,42 +454,75 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
 
           {/* Ingredient List */}
           <div className="max-h-[400px] overflow-y-auto rounded-lg border">
-            <div className="grid grid-cols-12 gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sticky top-0">
-              <div className="col-span-4">Name</div>
+            <div className={cn(
+              "grid gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sticky top-0",
+              rangeLoaded ? "grid-cols-12" : "grid-cols-12"
+            )}>
+              <div className={rangeLoaded ? "col-span-3" : "col-span-4"}>Name</div>
+              {rangeLoaded && <div className="col-span-3">Source</div>}
               <div className="col-span-2">Type</div>
-              <div className="col-span-2">Unit</div>
-              <div className="col-span-2">Per Person</div>
-              <div className="col-span-2">In Stock</div>
+              <div className="col-span-1">Unit</div>
+              <div className="col-span-1 text-center">Per Person</div>
+              <div className="col-span-2 text-center">In Stock</div>
             </div>
             {filteredIngredients.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                No ingredients found. Adjust filters or add shopping flags to ingredients.
+                {rangeLoaded 
+                  ? 'No ingredients found for this date range.'
+                  : 'No ingredients found. Adjust filters or add shopping flags to ingredients.'}
               </div>
             ) : (
-              filteredIngredients.map(ing => (
-                <div key={ing.id} className="grid grid-cols-12 gap-2 items-center border-b px-4 py-2 hover:bg-muted/30">
-                  <div className="col-span-4 font-medium truncate">{ing.name}</div>
-                  <div className="col-span-2">
-                    <Badge variant="outline" className={cn("text-xs", typeColors[ing.type])}>
-                      {ing.type}
-                    </Badge>
+              filteredIngredients.map((ing, idx) => {
+                const rangeIng = ing as RangeIngredient
+                const sourceLabel = rangeLoaded 
+                  ? rangeIng.source === 'recipe' 
+                    ? rangeIng.recipe_name || 'Recipe'
+                    : rangeIng.source === 'per_person' 
+                      ? 'Per Person/Day'
+                      : 'Per Week'
+                  : null
+                const sourceBadgeColor = rangeLoaded
+                  ? rangeIng.source === 'recipe'
+                    ? 'bg-blue-100 text-blue-800'
+                    : rangeIng.source === 'per_person'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-purple-100 text-purple-800'
+                  : ''
+                
+                return (
+                  <div key={`${ing.id}-${idx}`} className="grid grid-cols-12 gap-2 items-center border-b px-4 py-2 hover:bg-muted/30">
+                    <div className={cn("font-medium truncate", rangeLoaded ? "col-span-3" : "col-span-4")}>{ing.name}</div>
+                    {rangeLoaded && (
+                      <div className="col-span-3">
+                        <Badge variant="outline" className={cn("text-xs truncate max-w-full", sourceBadgeColor)}>
+                          {sourceLabel}
+                        </Badge>
+                      </div>
+                    )}
+                    <div className="col-span-2">
+                      <Badge variant="outline" className={cn("text-xs", typeColors[ing.type as IngredientType])}>
+                        {ing.type}
+                      </Badge>
+                    </div>
+                    <div className="col-span-1 text-sm text-muted-foreground">{ing.measurement}</div>
+                    <div className="col-span-1 text-sm text-muted-foreground text-center">
+                      {rangeLoaded && rangeIng.source === 'recipe' 
+                        ? rangeIng.recipe_amount?.toFixed(1) || '-'
+                        : ing.add_to_shopping_list_per_person || '-'}
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={getStockValue(ing)}
+                        onChange={(e) => handleStockChange(ing.id, e.target.value)}
+                        className="h-8 text-center"
+                      />
+                    </div>
                   </div>
-                  <div className="col-span-2 text-sm text-muted-foreground">{ing.measurement}</div>
-                  <div className="col-span-2 text-sm text-muted-foreground">
-                    {ing.add_to_shopping_list_per_person || '-'}
-                  </div>
-                  <div className="col-span-2">
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={getStockValue(ing)}
-                      onChange={(e) => handleStockChange(ing.id, e.target.value)}
-                      className="h-8 text-center"
-                    />
-                  </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
 

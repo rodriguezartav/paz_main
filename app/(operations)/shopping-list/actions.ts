@@ -67,6 +67,139 @@ export async function bulkUpdateIngredientStockAction(
   }
 }
 
+export async function fetchIngredientsForRangeAction(
+  weeklyMealPlanId: string,
+  startDate: string,
+  endDate: string
+): Promise<{ 
+  success: boolean
+  ingredients?: Array<{
+    id: string
+    name: string
+    type: string
+    measurement: string
+    items_in_stock: number | null
+    add_to_shopping_list_per_person: number | null
+    add_to_shopping_list_per_week: number | null
+    source: 'recipe' | 'per_person' | 'per_week'
+    recipe_name?: string
+    recipe_amount?: number
+  }>
+  error?: string 
+}> {
+  try {
+    const mealPlan = await getWeeklyMealPlanWithMealsForShoppingList(weeklyMealPlanId)
+    if (!mealPlan) {
+      return { success: false, error: 'Weekly meal plan not found' }
+    }
+
+    const shoppingIngredients = await getShoppingRelevantIngredients()
+    
+    // Track unique ingredients with their sources
+    const ingredientMap = new Map<string, {
+      id: string
+      name: string
+      type: string
+      measurement: string
+      items_in_stock: number | null
+      add_to_shopping_list_per_person: number | null
+      add_to_shopping_list_per_week: number | null
+      source: 'recipe' | 'per_person' | 'per_week'
+      recipe_name?: string
+      recipe_amount?: number
+    }>()
+
+    // Get meals in range
+    for (const meal of mealPlan.meals || []) {
+      const mealDate = getDateForDayOfWeek(mealPlan.week_start_date, meal.day_of_week)
+      if (mealDate >= startDate && mealDate <= endDate) {
+        if (!meal.recipes) continue
+        
+        for (const recipeEntry of meal.recipes) {
+          const recipe = recipeEntry.recipe
+          if (!recipe || !recipe.recipe_ingredients) continue
+
+          for (const ri of recipe.recipe_ingredients) {
+            if (!ri.ingredient) continue
+            const ing = ri.ingredient
+            
+            // Add as recipe ingredient (if not already there from a different source)
+            const key = `recipe-${ing.id}-${recipe.id}`
+            if (!ingredientMap.has(key)) {
+              ingredientMap.set(key, {
+                id: ing.id,
+                name: ing.name,
+                type: ing.type,
+                measurement: ing.measurement,
+                items_in_stock: ing.items_in_stock,
+                add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
+                add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
+                source: 'recipe',
+                recipe_name: recipe.name,
+                recipe_amount: ri.amount
+              })
+            }
+          }
+        }
+      }
+    }
+
+    // Add per-person ingredients
+    for (const ing of shoppingIngredients) {
+      if ((ing.add_to_shopping_list_per_person || 0) > 0) {
+        const key = `per_person-${ing.id}`
+        if (!ingredientMap.has(key)) {
+          ingredientMap.set(key, {
+            id: ing.id,
+            name: ing.name,
+            type: ing.type,
+            measurement: ing.measurement,
+            items_in_stock: ing.items_in_stock,
+            add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
+            add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
+            source: 'per_person'
+          })
+        }
+      }
+    }
+
+    // Add per-week ingredients
+    for (const ing of shoppingIngredients) {
+      if ((ing.add_to_shopping_list_per_week || 0) > 0) {
+        const key = `per_week-${ing.id}`
+        if (!ingredientMap.has(key)) {
+          ingredientMap.set(key, {
+            id: ing.id,
+            name: ing.name,
+            type: ing.type,
+            measurement: ing.measurement,
+            items_in_stock: ing.items_in_stock,
+            add_to_shopping_list_per_person: ing.add_to_shopping_list_per_person,
+            add_to_shopping_list_per_week: ing.add_to_shopping_list_per_week,
+            source: 'per_week'
+          })
+        }
+      }
+    }
+
+    const ingredients = Array.from(ingredientMap.values())
+    // Sort by source, then type, then name
+    ingredients.sort((a, b) => {
+      const sourceOrder = { recipe: 0, per_person: 1, per_week: 2 }
+      if (sourceOrder[a.source] !== sourceOrder[b.source]) {
+        return sourceOrder[a.source] - sourceOrder[b.source]
+      }
+      if (a.type !== b.type) return a.type.localeCompare(b.type)
+      return a.name.localeCompare(b.name)
+    })
+
+    return { success: true, ingredients }
+  } catch (error) {
+    console.error('Failed to fetch ingredients for range:', error)
+    return { success: false, error: 'Failed to fetch ingredients' }
+  }
+}
+
 export async function generateShoppingListAction(
   weeklyMealPlanId: string,
   startDate: string,
