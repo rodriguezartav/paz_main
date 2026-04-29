@@ -53,11 +53,26 @@ export function ApplicationFormClient({ sections, rates, modifiers }: Applicatio
 
   // Get answers for rate calculation
   const rateInputs = useMemo(() => {
-    // Find relevant questions
-    const applicationTypeQuestion = findQuestionByText('application type') || findQuestionByText('are you applying as')
+    // Find relevant questions - also search by options content for application type
+    let applicationTypeQuestion = findQuestionByText('application type') || findQuestionByText('are you applying as')
+    
+    // If not found by text, find question that has Volunteer/Resident options
+    if (!applicationTypeQuestion) {
+      for (const section of sections) {
+        for (const question of section.questions) {
+          const optionsStr = JSON.stringify(question.options || []).toLowerCase()
+          if (optionsStr.includes('volunteer') && optionsStr.includes('resident')) {
+            applicationTypeQuestion = question
+            break
+          }
+        }
+        if (applicationTypeQuestion) break
+      }
+    }
+    
     const roomPreferenceQuestion = findQuestionByText('room preference')
     const arrivalDateQuestion = findQuestionByText('preferred arrival date')
-    const departureDateQuestion = findQuestionByText('preferred departure date')
+    const departureDateQuestion = findQuestionByText('preferred departure date') || findQuestionByText('departure date')
 
     const applicationType = applicationTypeQuestion ? answers[applicationTypeQuestion.id] : null
     const roomPreference = roomPreferenceQuestion ? answers[roomPreferenceQuestion.id] : null
@@ -65,7 +80,7 @@ export function ApplicationFormClient({ sections, rates, modifiers }: Applicatio
     const departureDate = departureDateQuestion ? answers[departureDateQuestion.id] : null
 
     return { applicationType, roomPreference, arrivalDate, departureDate }
-  }, [answers, findQuestionByText])
+  }, [answers, sections, findQuestionByText])
 
   // Calculate nights and rate
   const rateCalculation = useMemo(() => {
