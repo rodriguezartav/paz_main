@@ -18,6 +18,10 @@ import { saveDraftApplication, submitApplication } from './actions'
 import { ChevronLeft, ChevronRight, Send, CheckCircle2, Loader2, Save, DollarSign, Calendar, Home, Users, Clock, Shield, Heart, ArrowRight } from 'lucide-react'
 import { calculateRate, isRateCalculationError, formatCurrency } from '@/lib/utils/rate-calculator'
 
+import Image from 'next/image'
+import Link from 'next/link'
+
+
 interface ApplicationFormClientProps {
   sections: ApplicationSection[]
   rates: RateRule[]
@@ -503,8 +507,22 @@ export function ApplicationFormClient({ sections, rates, modifiers }: Applicatio
         <div className="mx-auto max-w-2xl px-4 py-12 md:py-20">
           {/* Header */}
           <div className="text-center mb-12">
+          <Link href="/" className="block">
+            
+            <div className="flex justify-center">
+              <Image
+                src="/logo.png"
+                alt="Paz Operations"
+                width={200}
+                height={60}
+                className="mb-2 h-auto w-auto max-w-[200px]"
+                priority
+              />
+            </div>
+    
+          </Link>
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Apply to Paz Corcovado
+              Visitor Application 
             </h1>
             <p className="text-lg text-muted-foreground">
               A quick application that helps us understand if we are a good fit for each other.
