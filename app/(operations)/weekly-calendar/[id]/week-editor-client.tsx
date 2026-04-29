@@ -222,9 +222,15 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
     })
   }
 
-  // Filter recipes by meal type
+  // Get all recipes, with matching meal type first
   const getRecipesForMealType = (mealType: MealType): Recipe[] => {
-    return recipes.filter(r => r.meal_type === mealType)
+    // Sort recipes: matching meal type first, then alphabetically
+    return [...recipes].sort((a, b) => {
+      const aMatches = a.meal_type === mealType ? 0 : 1
+      const bMatches = b.meal_type === mealType ? 0 : 1
+      if (aMatches !== bMatches) return aMatches - bMatches
+      return a.name.localeCompare(b.name)
+    })
   }
 
   return (
