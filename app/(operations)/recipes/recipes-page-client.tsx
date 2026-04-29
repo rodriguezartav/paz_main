@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { RecipeCard } from '@/components/recipes/recipe-card'
 import { RecipeForm } from '@/components/recipes/recipe-form'
 import { RecipeDetailPanel } from '@/components/recipes/recipe-detail-panel'
-import type { Recipe, Ingredient, RecipeType } from '@/lib/types'
+import type { Recipe, Ingredient, RecipeType, MealType } from '@/lib/types'
 import { Plus } from 'lucide-react'
 import { createRecipeAction, updateRecipeAction } from './actions'
 
@@ -43,6 +43,7 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
     name: string
     english_name: string | null
     type: RecipeType | null
+    meal_type: MealType | null
     description: string | null
     notes: string | null
     id?: string
