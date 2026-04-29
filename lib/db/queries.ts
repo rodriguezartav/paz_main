@@ -1578,12 +1578,18 @@ export async function createWeeklyMealPlan(
   const mealTypes: MealType[] = ['brunch', 'dinner']
   const meals: any[] = []
   
-  const startDate = new Date(weekStartDate)
+  // Parse date directly to avoid timezone issues
+  const [year, month, day] = weekStartDate.split('-').map(Number)
+  const startDate = new Date(year, month - 1, day)
   
   for (let i = 0; i < 7; i++) {
     const date = new Date(startDate)
     date.setDate(date.getDate() + i)
-    const dateStr = date.toISOString().split('T')[0]
+    // Format as YYYY-MM-DD without timezone conversion
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${y}-${m}-${d}`
     const headcount = defaultHeadcounts.get(dateStr) || { eats_all: 0, vegetarian: 0, vegan: 0, total: 0 }
     
     for (const mealType of mealTypes) {
@@ -1594,6 +1600,7 @@ export async function createWeeklyMealPlan(
         weekly_meal_plan_id: plan.id,
         day_of_week: days[i],
         meal_type: mealType,
+        meal_date: dateStr,
         headcount_eats_all: headcount.eats_all,
         headcount_vegetarian: headcount.vegetarian,
         headcount_vegan: headcount.vegan,
