@@ -19,8 +19,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { RateRule, RateApplicationType, RateRoomType, ResidentPriceModifier, AdjustmentType } from '@/lib/types'
-import { Plus, Pencil, DollarSign, Users, Home, Tent, Loader2, Calculator, AlertTriangle, Info, Percent, Hash } from 'lucide-react'
+import type { RateRule, RateApplicationType, RateRoomType, ResidentPriceModifier, AdjustmentType, ResidentType } from '@/lib/types'
+import { Plus, Pencil, DollarSign, Users, Home, Tent, Loader2, Calculator, AlertTriangle, Info, Percent, Hash, ArrowRight } from 'lucide-react'
+import { calculateRate, isRateCalculationError, formatCurrency, determineApplicationType } from '@/lib/utils/rate-calculator'
 import { createRateRuleAction, updateRateRuleAction, toggleRateRuleActiveAction, createResidentPriceModifierAction, updateResidentPriceModifierAction, toggleResidentPriceModifierActiveAction } from './actions'
 
 interface RatesPageClientProps {
@@ -79,8 +80,9 @@ export function RatesPageClient({ initialRates, initialModifiers }: RatesPageCli
   const [modFormNotes, setModFormNotes] = useState('')
 
   // Preview Tool state
-  const [previewBaseRate, setPreviewBaseRate] = useState('')
   const [previewNights, setPreviewNights] = useState('')
+  const [previewRoomType, setPreviewRoomType] = useState<RateRoomType>('double')
+  const [previewResidentType, setPreviewResidentType] = useState<ResidentType>('resident')
 
   // Stats
   const activeRates = initialRates.filter(r => r.is_active)
@@ -89,67 +91,29 @@ export function RatesPageClient({ initialRates, initialModifiers }: RatesPageCli
   const retreatRates = initialRates.filter(r => r.application_type === 'retreat')
   const activeModifiers = initialModifiers.filter(m => m.is_active)
 
-  // Preview calculation
+  // Preview calculation using the rate calculator
   const previewResult = useMemo(() => {
-    const baseRate = parseFloat(previewBaseRate)
     const nights = parseInt(previewNights)
     
-    if (isNaN(baseRate) || baseRate <= 0 || isNaN(nights) || nights <= 0) {
+    if (isNaN(nights) || nights <= 0) {
       return null
     }
 
-    // Warning for less than 8 nights
-    if (nights < 8) {
-      return {
-        type: 'warning' as const,
-        message: 'Resident rates are designed for an 8-night minimum stay. Use retreat pricing or manual override for shorter stays.',
-        finalRate: null,
-        modifier: null
-      }
-    }
-
-    // Warning for more than 30 nights
-    if (nights > 30) {
-      return {
-        type: 'warning' as const,
-        message: 'Resident stays longer than 30 nights require manual review.',
-        finalRate: null,
-        modifier: null
-      }
-    }
-
-    // Find applicable modifier
-    const applicableModifier = activeModifiers.find(m => 
-      nights >= m.min_nights && (m.max_nights === null || nights <= m.max_nights)
+    const result = calculateRate(
+      { nights, roomType: previewRoomType, residentType: previewResidentType },
+      initialRates,
+      initialModifiers
     )
 
-    if (!applicableModifier) {
-      return {
-        type: 'info' as const,
-        message: 'No active modifier found for this stay length.',
-        finalRate: baseRate,
-        modifier: null
-      }
-    }
+    return result
+  }, [previewNights, previewRoomType, previewResidentType, initialRates, initialModifiers])
 
-    // Calculate final rate
-    let finalRate: number
-    if (applicableModifier.adjustment_type === 'percentage') {
-      finalRate = baseRate * (1 + applicableModifier.adjustment_value / 100)
-    } else {
-      finalRate = baseRate + applicableModifier.adjustment_value
-    }
-
-    // Round to nearest whole dollar
-    finalRate = Math.round(finalRate)
-
-    return {
-      type: 'success' as const,
-      message: `${applicableModifier.name} applied because this stay qualifies for a ${Math.abs(applicableModifier.adjustment_value)}% resident discount.`,
-      finalRate,
-      modifier: applicableModifier
-    }
-  }, [previewBaseRate, previewNights, activeModifiers])
+  // Derived application type for preview display
+  const previewApplicationType = useMemo(() => {
+    const nights = parseInt(previewNights)
+    if (isNaN(nights) || nights <= 0) return null
+    return determineApplicationType(previewResidentType, nights)
+  }, [previewNights, previewResidentType])
 
   // Rate dialog handlers
   const openCreateRateDialog = () => {
@@ -552,37 +516,48 @@ export function RatesPageClient({ initialRates, initialModifiers }: RatesPageCli
         </Card>
       </div>
 
-      {/* Resident Price Modifier Preview Tool */}
+      {/* Rate Calculator Tool */}
       <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-foreground">Rate Preview Tool</h2>
+        <h2 className="text-xl font-semibold text-foreground">Rate Calculator</h2>
         
         <Card className="border-border bg-card">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Calculator className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">Calculate Resident Rate</CardTitle>
+              <CardTitle className="text-lg">Calculate Stay Rate</CardTitle>
             </div>
             <CardDescription>
-              Enter a base rate and number of nights to preview the final rate with modifiers applied.
+              Select resident type, room type, and number of nights to calculate the applicable rate.
+              Rates are automatically determined based on stay length and resident type.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="previewBaseRate">Base Nightly Rate</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                  <Input
-                    id="previewBaseRate"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={previewBaseRate}
-                    onChange={(e) => setPreviewBaseRate(e.target.value)}
-                    className="pl-7"
-                    placeholder="100"
-                  />
-                </div>
+                <Label>Resident Type</Label>
+                <Select value={previewResidentType} onValueChange={(v) => setPreviewResidentType(v as ResidentType)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="resident">Resident</SelectItem>
+                    <SelectItem value="volunteer">Volunteer</SelectItem>
+                    <SelectItem value="retreat">Retreat</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Room Type</Label>
+                <Select value={previewRoomType} onValueChange={(v) => setPreviewRoomType(v as RateRoomType)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quad">Quad</SelectItem>
+                    <SelectItem value="double">Double</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="previewNights">Total Nights</Label>
@@ -598,44 +573,86 @@ export function RatesPageClient({ initialRates, initialModifiers }: RatesPageCli
               </div>
             </div>
 
+            {/* Rate type logic explanation */}
+            {previewApplicationType && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                <Info className="h-4 w-4 shrink-0" />
+                <span>
+                  {previewResidentType === 'volunteer' ? (
+                    'Volunteers always use volunteer rates regardless of stay length.'
+                  ) : parseInt(previewNights) < 8 ? (
+                    <>Stays under 8 nights use <Badge variant="outline" className="mx-1">Retreat</Badge> rates.</>
+                  ) : (
+                    <>Stays of 8+ nights use <Badge variant="outline" className="mx-1">Resident</Badge> rates with applicable discounts.</>
+                  )}
+                </span>
+              </div>
+            )}
+
             {previewResult && (
               <div className="mt-4">
-                {previewResult.type === 'warning' && (
-                  <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-800">
+                {isRateCalculationError(previewResult) ? (
+                  <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Warning</AlertTitle>
+                    <AlertTitle>Rate Not Found</AlertTitle>
                     <AlertDescription>{previewResult.message}</AlertDescription>
                   </Alert>
-                )}
-                {previewResult.type === 'info' && (
-                  <Alert className="bg-blue-50 border-blue-200 text-blue-800">
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>No Modifier Applied</AlertTitle>
-                    <AlertDescription>
-                      {previewResult.message}
-                      <div className="mt-2 text-lg font-semibold">
-                        Final Rate: ${previewResult.finalRate}/night
+                ) : (
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-green-600" />
+                        <span className="font-medium text-green-800">Rate Calculated</span>
                       </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-                {previewResult.type === 'success' && (
-                  <Alert className="bg-green-50 border-green-200 text-green-800">
-                    <DollarSign className="h-4 w-4" />
-                    <AlertTitle>Modifier Applied</AlertTitle>
-                    <AlertDescription>
-                      {previewResult.message}
-                      <div className="mt-2 flex items-center gap-4">
-                        <div>
-                          <span className="text-sm text-muted-foreground">Base:</span>{' '}
-                          <span className="line-through">${parseFloat(previewBaseRate).toFixed(0)}</span>
+                      <Badge className="bg-green-100 text-green-800 border-green-300">
+                        {previewResult.applicationType.charAt(0).toUpperCase() + previewResult.applicationType.slice(1)} Rate
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-green-700">Rate Used:</span>
+                        <span className="font-medium text-green-900">{previewResult.rateName}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-green-700">Base Nightly Rate:</span>
+                        <span className="font-medium text-green-900">{formatCurrency(previewResult.baseRate)}</span>
+                      </div>
+
+                      {previewResult.modifier && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-green-700">Modifier:</span>
+                          <span className="font-medium text-green-900">
+                            {previewResult.modifier.name} ({previewResult.modifier.adjustment_value}%)
+                          </span>
                         </div>
-                        <div className="text-lg font-semibold">
-                          Final Rate: ${previewResult.finalRate}/night
+                      )}
+
+                      <div className="border-t border-green-200 pt-3 mt-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-green-700">Final Nightly Rate:</span>
+                          <div className="flex items-center gap-2">
+                            {previewResult.modifier && (
+                              <span className="text-sm text-muted-foreground line-through">
+                                {formatCurrency(previewResult.baseRate)}
+                              </span>
+                            )}
+                            <span className="font-bold text-lg text-green-900">
+                              {formatCurrency(previewResult.finalRate)}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-green-700">Total ({previewResult.nights} nights):</span>
+                          <span className="font-bold text-xl text-green-900">
+                            {formatCurrency(previewResult.totalCost)}
+                          </span>
                         </div>
                       </div>
-                    </AlertDescription>
-                  </Alert>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
