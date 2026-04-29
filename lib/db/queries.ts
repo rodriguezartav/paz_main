@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection, WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, DayOfWeek, MealType, WeeklyMealPlan, WeeklyMealPlanMeal, WeeklyMealPlanRecipe, DietHeadcount, RateRule, ResidentPriceModifier, ResidentBill } from '@/lib/types'
+import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection, WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, DayOfWeek, MealType, WeeklyMealPlan, WeeklyMealPlanMeal, WeeklyMealPlanRecipe, DietHeadcount, RateRule, ResidentPriceModifier, ResidentBill, ScheduledActivity } from '@/lib/types'
 
 // Resident queries
 export async function getResidents(): Promise<Resident[]> {
@@ -1970,6 +1970,92 @@ export async function deleteResidentBill(id: string): Promise<void> {
   const supabase = await createClient()
   const { error } = await supabase
     .from('resident_bills')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
+}
+
+// Scheduled Activity queries
+export async function getScheduledActivities(): Promise<ScheduledActivity[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('scheduled_activities')
+    .select('*')
+    .order('date', { ascending: true })
+    .order('start_time', { ascending: true })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getPublicActivitiesForNextDays(days: number = 7): Promise<ScheduledActivity[]> {
+  const supabase = await createClient()
+  const today = new Date().toISOString().split('T')[0]
+  const endDate = new Date()
+  endDate.setDate(endDate.getDate() + days)
+  const endDateStr = endDate.toISOString().split('T')[0]
+  
+  const { data, error } = await supabase
+    .from('scheduled_activities')
+    .select('*')
+    .eq('is_public', true)
+    .in('status', ['planned', 'confirmed'])
+    .gte('date', today)
+    .lte('date', endDateStr)
+    .order('date', { ascending: true })
+    .order('start_time', { ascending: true })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getScheduledActivityById(id: string): Promise<ScheduledActivity | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('scheduled_activities')
+    .select('*')
+    .eq('id', id)
+    .single()
+  
+  if (error) return null
+  return data
+}
+
+export async function createScheduledActivity(
+  activity: Omit<ScheduledActivity, 'id' | 'created_at' | 'updated_at'>
+): Promise<ScheduledActivity> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('scheduled_activities')
+    .insert(activity)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function updateScheduledActivity(
+  id: string,
+  updates: Partial<Omit<ScheduledActivity, 'id' | 'created_at' | 'updated_at'>>
+): Promise<ScheduledActivity> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('scheduled_activities')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function deleteScheduledActivity(id: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('scheduled_activities')
     .delete()
     .eq('id', id)
   

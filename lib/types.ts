@@ -345,6 +345,32 @@ export interface ResidentBill {
   resident?: Resident
 }
 
+// Scheduled Activity Types
+export type ActivityType = 'surf' | 'sauna' | 'nature_walk' | 'community' | 'music' | 'workshop' | 'service' | 'other'
+export type ActivityStatus = 'planned' | 'confirmed' | 'cancelled' | 'completed'
+
+export interface ScheduledActivity {
+  id: string
+  title: string
+  activity_type: ActivityType
+  date: string
+  start_time: string | null
+  end_time: string | null
+  location: string | null
+  facilitator_user_id: string | null
+  facilitator_name: string | null
+  capacity: number | null
+  status: ActivityStatus
+  notes: string | null
+  is_public: boolean
+  guest_description: string | null
+  what_to_bring: string | null
+  safety_note: string | null
+  signup_enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
 // Resident Price Modifier Types
 export type AdjustmentType = 'percentage' | 'fixed_amount'
 
