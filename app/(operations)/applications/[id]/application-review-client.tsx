@@ -144,6 +144,9 @@ function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
     if (question.includes('which statement feels most true') && valueStr.includes('not sure yet')) {
       yellow.push('Unsure about expectations')
     }
+    if (question.includes('which of the following have you experienced') && (!valueStr || valueStr.trim() === '' || valueStr === '[]')) {
+      yellow.push('No prior relevant experiences selected')
+    }
     
     // Red signals
     if (question.includes('which statement feels most true') && valueStr.includes('comfortable retreat')) {
@@ -166,6 +169,9 @@ function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
     }
     if (question.includes('hours per day') && valueStr === '5+') {
       red.push('Expects 5+ hours online daily')
+    }
+    if (question.includes('food allergies') && valueStr && valueStr.trim() !== '' && valueStr.toLowerCase() !== 'no' && valueStr.toLowerCase() !== 'none') {
+      red.push('Has food allergies/dietary restrictions')
     }
   }
   
