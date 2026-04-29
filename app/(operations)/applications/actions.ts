@@ -37,7 +37,8 @@ export async function acceptApplicationAndCreateResident(
   application: Application,
   arrivalDate: string,
   departureDate: string,
-  agreedRate: number
+  agreedRate: number,
+  recommendedResidentType: ResidentType
 ): Promise<{ residentId: string }> {
   // Parse application answers to extract resident data
   const getAnswerValue = (questionPartial: string): string | null => {
@@ -68,8 +69,10 @@ export async function acceptApplicationAndCreateResident(
   const ageAnswer = getAnswerValue('age')
   const age = ageAnswer ? parseInt(ageAnswer, 10) : null
 
-  // Find and map resident type from application (Type of Visit question)
-  let residentType: ResidentType = 'resident'
+  // Determine resident type:
+  // - If applicant selected "volunteer" in the application -> use 'volunteer'
+  // - Otherwise -> use the recommendedResidentType from rate calculation (which considers stay length)
+  let residentType: ResidentType = recommendedResidentType
   for (const answer of application.answers || []) {
     const optionsStr = JSON.stringify(answer.question_options_snapshot || []).toLowerCase()
     if (optionsStr.includes('volunteer') && optionsStr.includes('resident')) {
@@ -78,15 +81,12 @@ export async function acceptApplicationAndCreateResident(
         const typeStr = (Array.isArray(parsed) ? parsed.join(', ') : String(parsed)).toLowerCase()
         if (typeStr.includes('volunteer')) {
           residentType = 'volunteer'
-        } else if (typeStr.includes('retreat')) {
-          residentType = 'retreat'
         }
+        // For non-volunteers, we use the recommendedResidentType (resident or retreat based on stay length)
       } catch {
         const typeStr = String(answer.answer_value).toLowerCase()
         if (typeStr.includes('volunteer')) {
           residentType = 'volunteer'
-        } else if (typeStr.includes('retreat')) {
-          residentType = 'retreat'
         }
       }
       break

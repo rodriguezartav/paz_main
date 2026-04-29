@@ -369,13 +369,19 @@ export function ApplicationReviewClient({ application, rates, modifiers }: Appli
   const handleAcceptApplication = async () => {
     if (!arrivalDate || !departureDate || agreedRate === null) return
     
+    // Determine the resident type to use:
+    // - If volunteer selected in app -> 'volunteer' (handled by action)
+    // - Otherwise -> use the type from rate calculation (resident or retreat based on stay length)
+    const recommendedType: ResidentType = recommendedRate?.type || 'resident'
+    
     setIsAccepting(true)
     try {
       const { residentId } = await acceptApplicationAndCreateResident(
         application,
         arrivalDate,
         departureDate,
-        agreedRate
+        agreedRate,
+        recommendedType
       )
       setStatus('accepted')
       setShowAcceptDialog(false)
