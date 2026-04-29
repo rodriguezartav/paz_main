@@ -2,7 +2,7 @@
 
 import { updateApplication, deleteApplication, createResidentFromApplication } from '@/lib/db/queries'
 import { revalidatePath } from 'next/cache'
-import type { ApplicationStatus, Application, Diet, Gender } from '@/lib/types'
+import type { ApplicationStatus, Application, Diet, Gender, ResidentType } from '@/lib/types'
 
 export async function updateApplicationStatus(id: string, status: ApplicationStatus) {
   const updates: { status: ApplicationStatus; reviewed_at?: string } = { status }
@@ -36,7 +36,8 @@ export async function deleteApplicationAction(id: string) {
 export async function acceptApplicationAndCreateResident(
   application: Application,
   arrivalDate: string,
-  departureDate: string
+  departureDate: string,
+  agreedRate: number
 ): Promise<{ residentId: string }> {
   // Parse application answers to extract resident data
   const getAnswerValue = (questionPartial: string): string | null => {
@@ -67,6 +68,31 @@ export async function acceptApplicationAndCreateResident(
   const ageAnswer = getAnswerValue('age')
   const age = ageAnswer ? parseInt(ageAnswer, 10) : null
 
+  // Find and map resident type from application (Type of Visit question)
+  let residentType: ResidentType = 'resident'
+  for (const answer of application.answers || []) {
+    const optionsStr = JSON.stringify(answer.question_options_snapshot || []).toLowerCase()
+    if (optionsStr.includes('volunteer') && optionsStr.includes('resident')) {
+      try {
+        const parsed = JSON.parse(String(answer.answer_value))
+        const typeStr = (Array.isArray(parsed) ? parsed.join(', ') : String(parsed)).toLowerCase()
+        if (typeStr.includes('volunteer')) {
+          residentType = 'volunteer'
+        } else if (typeStr.includes('retreat')) {
+          residentType = 'retreat'
+        }
+      } catch {
+        const typeStr = String(answer.answer_value).toLowerCase()
+        if (typeStr.includes('volunteer')) {
+          residentType = 'volunteer'
+        } else if (typeStr.includes('retreat')) {
+          residentType = 'retreat'
+        }
+      }
+      break
+    }
+  }
+
   const residentData = {
     name: application.applicant_name || 'Unknown',
     email: application.applicant_email || '',
@@ -75,8 +101,10 @@ export async function acceptApplicationAndCreateResident(
     gender,
     age: isNaN(age || 0) ? null : age,
     diet,
+    resident_type: residentType,
     arrival_date: arrivalDate,
     departure_date: departureDate,
+    nightly_rate: agreedRate,
     application_id: application.id,
     notes: `Created from application. ${application.reviewer_notes || ''}`.trim(),
   }

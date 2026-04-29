@@ -50,8 +50,10 @@ export async function createResidentFromApplication(data: {
   gender: 'female' | 'male'
   age?: number | null
   diet: 'eats_all' | 'vegetarian' | 'vegan'
+  resident_type?: 'volunteer' | 'resident' | 'retreat'
   arrival_date: string
   departure_date: string
+  nightly_rate?: number
   application_id: string
   notes?: string | null
 }): Promise<Resident> {

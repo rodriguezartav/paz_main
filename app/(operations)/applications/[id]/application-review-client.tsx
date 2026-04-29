@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Dialog,
   DialogContent,
@@ -18,13 +19,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { Application, ApplicationStatus, ApplicationAnswer } from '@/lib/types'
+import type { Application, ApplicationStatus, ApplicationAnswer, RateRule, ResidentPriceModifier, ResidentType, RateRoomType } from '@/lib/types'
 import { updateApplicationStatus, updateApplicationScore, updateApplicationNotes, acceptApplicationAndCreateResident } from '../actions'
-import { ArrowLeft, Star, Mail, Phone, Calendar, Clock, AlertTriangle, CheckCircle, AlertCircle, Save, UserPlus } from 'lucide-react'
+import { ArrowLeft, Star, Mail, Phone, Calendar, Clock, AlertTriangle, CheckCircle, AlertCircle, Save, UserPlus, DollarSign, Home, Users, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { calculateRate, isRateCalculationError, formatCurrency } from '@/lib/utils/rate-calculator'
 
 interface ApplicationReviewClientProps {
   application: Application
+  rates: RateRule[]
+  modifiers: ResidentPriceModifier[]
 }
 
 const statusColors: Record<ApplicationStatus, string> = {
@@ -178,7 +182,7 @@ function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
   return { green: [...new Set(green)], yellow: [...new Set(yellow)], red: [...new Set(red)] }
 }
 
-export function ApplicationReviewClient({ application }: ApplicationReviewClientProps) {
+export function ApplicationReviewClient({ application, rates, modifiers }: ApplicationReviewClientProps) {
   const router = useRouter()
   const [status, setStatus] = useState(application.status)
   const [score, setScore] = useState(application.internal_score || 0)
@@ -189,10 +193,147 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
   const [showAcceptDialog, setShowAcceptDialog] = useState(false)
   const [arrivalDate, setArrivalDate] = useState('')
   const [departureDate, setDepartureDate] = useState('')
+  const [agreedRate, setAgreedRate] = useState<number | null>(null)
   const [isAccepting, setIsAccepting] = useState(false)
 
   const sectionedAnswers = groupAnswersBySection(application.answers)
   const fitSignals = analyzeFitSignals(application.answers)
+
+  // Extract rate-relevant answers from application
+  const rateInputsFromApplication = useMemo(() => {
+    const getAnswerValueLocal = (questionPartial: string): string | null => {
+      const answer = application.answers?.find(a => 
+        a.question_text_snapshot.toLowerCase().includes(questionPartial.toLowerCase())
+      )
+      if (!answer) return null
+      try {
+        const parsed = JSON.parse(String(answer.answer_value))
+        return Array.isArray(parsed) ? parsed.join(', ') : String(parsed)
+      } catch {
+        return String(answer.answer_value)
+      }
+    }
+
+    // Find application type question (might be "Type of Visit" or have volunteer/resident options)
+    let applicationType: string | null = null
+    for (const answer of application.answers || []) {
+      const optionsStr = JSON.stringify(answer.question_options_snapshot || []).toLowerCase()
+      if (optionsStr.includes('volunteer') && optionsStr.includes('resident')) {
+        try {
+          const parsed = JSON.parse(String(answer.answer_value))
+          applicationType = Array.isArray(parsed) ? parsed.join(', ') : String(parsed)
+        } catch {
+          applicationType = String(answer.answer_value)
+        }
+        break
+      }
+    }
+
+    const roomPreference = getAnswerValueLocal('room preference')
+    const arrivalDateAnswer = getAnswerValueLocal('preferred arrival date')
+    const departureDateAnswer = getAnswerValueLocal('preferred departure date')
+
+    return { applicationType, roomPreference, arrivalDate: arrivalDateAnswer, departureDate: departureDateAnswer }
+  }, [application.answers])
+
+  // Calculate recommended rate based on application answers
+  const recommendedRate = useMemo(() => {
+    const { applicationType, roomPreference, arrivalDate: appArrival, departureDate: appDeparture } = rateInputsFromApplication
+
+    // Determine resident type
+    let residentType: ResidentType = 'resident'
+    if (applicationType) {
+      const typeStr = applicationType.toLowerCase()
+      if (typeStr.includes('volunteer')) {
+        residentType = 'volunteer'
+      } else if (typeStr.includes('retreat')) {
+        residentType = 'retreat'
+      }
+    }
+
+    // For volunteers, we can calculate rate without departure date
+    if (residentType === 'volunteer') {
+      // Map room preference
+      let roomType: RateRoomType = 'any'
+      if (roomPreference) {
+        const roomStr = roomPreference.toLowerCase()
+        if (roomStr.includes('private')) {
+          roomType = 'private'
+        } else if (roomStr.includes('quad')) {
+          roomType = 'quad'
+        } else if (roomStr.includes('double')) {
+          roomType = 'double'
+        }
+      }
+
+      // Find volunteer rate
+      const volunteerRate = rates.find(r => 
+        r.application_type === 'volunteer' && 
+        r.is_active && 
+        (r.room_type === roomType || r.room_type === 'any')
+      )
+
+      if (volunteerRate) {
+        return {
+          type: 'volunteer' as const,
+          baseRate: volunteerRate.base_nightly_rate,
+          finalRate: volunteerRate.base_nightly_rate,
+          rateName: volunteerRate.name,
+          nights: null,
+          totalCost: null,
+          modifier: null
+        }
+      }
+      return null
+    }
+
+    // For non-volunteers, we need departure date
+    if (!appArrival || !appDeparture) {
+      return null
+    }
+
+    // Calculate nights
+    const arrival = new Date(appArrival)
+    const departure = new Date(appDeparture)
+    const nights = Math.ceil((departure.getTime() - arrival.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (nights <= 0) {
+      return null
+    }
+
+    // Map room preference
+    let roomType: RateRoomType = 'double'
+    if (roomPreference) {
+      const roomStr = roomPreference.toLowerCase()
+      if (roomStr.includes('private')) {
+        roomType = 'private'
+      } else if (roomStr.includes('quad')) {
+        roomType = 'quad'
+      } else if (roomStr.includes('double')) {
+        roomType = 'double'
+      }
+    }
+
+    const result = calculateRate(
+      { nights, roomType, residentType },
+      rates,
+      modifiers
+    )
+
+    if (isRateCalculationError(result)) {
+      return null
+    }
+
+    return {
+      type: result.applicationType as 'resident' | 'retreat',
+      baseRate: result.baseRate,
+      finalRate: result.finalRate,
+      rateName: result.rateName,
+      nights: result.nights,
+      totalCost: result.totalCost,
+      modifier: result.modifier
+    }
+  }, [rateInputsFromApplication, rates, modifiers])
   
   // Get specific answer values for display
   const getAnswerValue = (questionPartial: string): string | null => {
@@ -226,14 +367,15 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
   }
 
   const handleAcceptApplication = async () => {
-    if (!arrivalDate || !departureDate) return
+    if (!arrivalDate || !departureDate || agreedRate === null) return
     
     setIsAccepting(true)
     try {
       const { residentId } = await acceptApplicationAndCreateResident(
         application,
         arrivalDate,
-        departureDate
+        departureDate,
+        agreedRate
       )
       setStatus('accepted')
       setShowAcceptDialog(false)
@@ -255,6 +397,10 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
     const preferredDeparture = getAnswerValue('preferred departure date')
     if (preferredDeparture) {
       setDepartureDate(preferredDeparture)
+    }
+    // Pre-fill recommended rate if available
+    if (recommendedRate) {
+      setAgreedRate(recommendedRate.finalRate)
     }
     setShowAcceptDialog(true)
   }
@@ -543,7 +689,7 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
 
       {/* Accept Application Dialog */}
       <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Accept Application & Create Resident</DialogTitle>
             <DialogDescription>
@@ -552,24 +698,102 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="arrival-date">Arrival Date</Label>
-              <Input
-                id="arrival-date"
-                type="date"
-                value={arrivalDate}
-                onChange={(e) => setArrivalDate(e.target.value)}
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="arrival-date">Arrival Date</Label>
+                <Input
+                  id="arrival-date"
+                  type="date"
+                  value={arrivalDate}
+                  onChange={(e) => setArrivalDate(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="departure-date">Departure Date</Label>
+                <Input
+                  id="departure-date"
+                  type="date"
+                  value={departureDate}
+                  onChange={(e) => setDepartureDate(e.target.value)}
+                />
+              </div>
             </div>
-            
+
+            {/* Recommended Rate Section */}
+            {recommendedRate ? (
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-green-600" />
+                    <span className="font-medium text-green-800">Recommended Rate</span>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800 border-green-300 capitalize">
+                    {recommendedRate.type}
+                  </Badge>
+                </div>
+                
+                <div className="grid gap-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-green-700">Rate Type:</span>
+                    <span className="font-medium text-green-900">{recommendedRate.rateName}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-green-700">Base Rate:</span>
+                    <span className="font-medium text-green-900">{formatCurrency(recommendedRate.baseRate)}/night</span>
+                  </div>
+                  {recommendedRate.modifier && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-green-700">Discount:</span>
+                      <span className="font-medium text-green-900">
+                        {recommendedRate.modifier.name} ({recommendedRate.modifier.adjustment_value}%)
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between font-medium">
+                    <span className="text-green-700">Final Rate:</span>
+                    <span className="text-green-900">{formatCurrency(recommendedRate.finalRate)}/night</span>
+                  </div>
+                  {recommendedRate.nights && recommendedRate.totalCost && (
+                    <div className="flex items-center justify-between border-t border-green-200 pt-2 mt-2">
+                      <span className="text-green-700">Total ({recommendedRate.nights} nights):</span>
+                      <span className="text-lg font-bold text-green-900">{formatCurrency(recommendedRate.totalCost)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <Alert className="bg-amber-50 border-amber-200">
+                <Info className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  Unable to calculate recommended rate. This may be an older application without departure date information, 
+                  or missing required fields. You must manually enter an agreed rate to proceed.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Agreed Rate Input */}
             <div className="space-y-2">
-              <Label htmlFor="departure-date">Departure Date</Label>
-              <Input
-                id="departure-date"
-                type="date"
-                value={departureDate}
-                onChange={(e) => setDepartureDate(e.target.value)}
-              />
+              <Label htmlFor="agreed-rate" className="flex items-center gap-2">
+                Agreed Nightly Rate
+                <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  id="agreed-rate"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={agreedRate ?? ''}
+                  onChange={(e) => setAgreedRate(e.target.value ? parseFloat(e.target.value) : null)}
+                  className="pl-7"
+                  placeholder="Enter agreed rate"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This is the final agreed nightly rate for the resident. You can adjust from the recommended rate if needed.
+              </p>
             </div>
           </div>
 
@@ -579,7 +803,7 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
             </Button>
             <Button 
               onClick={handleAcceptApplication}
-              disabled={!arrivalDate || !departureDate || isAccepting}
+              disabled={!arrivalDate || !departureDate || agreedRate === null || isAccepting}
               className="bg-green-600 hover:bg-green-700"
             >
               {isAccepting ? 'Creating...' : 'Accept & Create Resident'}
