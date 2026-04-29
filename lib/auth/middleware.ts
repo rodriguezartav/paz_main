@@ -6,6 +6,7 @@ const PUBLIC_ROUTES = [
   '/login',
   '/apply',
   '/calendar',
+  '/portal',
   '/auth/callback',
   '/setup',
 ]
