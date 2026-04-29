@@ -137,7 +137,13 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
       if (result.success && result.meal) {
         setPlan(prev => ({
           ...prev,
-          meals: prev.meals?.map(m => m.id === editingMeal.id ? result.meal! : m)
+          meals: prev.meals?.map(m => {
+            if (m.id === editingMeal.id) {
+              // Preserve the recipes when updating headcounts
+              return { ...result.meal!, recipes: m.recipes }
+            }
+            return m
+          })
         }))
       }
       
