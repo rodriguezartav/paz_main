@@ -188,13 +188,14 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
   }
 
   const handleCreateStayBill = () => {
-    if (!resident.nightly_rate) return
+    if (resident.nightly_rate === null) return
+    const rate = resident.nightly_rate
     startTransition(async () => {
       await createStayBillAction(
         resident.id,
         resident.arrival_date,
         resident.departure_date,
-        resident.nightly_rate
+        rate
       )
     })
   }

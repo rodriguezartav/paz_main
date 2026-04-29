@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { ApplicationSection, ApplicationQuestion, RateRule, ResidentPriceModifier, ResidentType, RateRoomType } from '@/lib/types'
 import { saveDraftApplication, submitApplication } from './actions'
-import { ChevronLeft, ChevronRight, Send, CheckCircle2, Loader2, Save, DollarSign, Calendar, Home, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, CheckCircle2, Loader2, Save, DollarSign, Calendar, Home, Users, Clock, Shield, Heart, ArrowRight } from 'lucide-react'
 import { calculateRate, isRateCalculationError, formatCurrency } from '@/lib/utils/rate-calculator'
 
 interface ApplicationFormClientProps {
@@ -26,6 +26,7 @@ interface ApplicationFormClientProps {
 
 export function ApplicationFormClient({ sections, rates, modifiers }: ApplicationFormClientProps) {
   const router = useRouter()
+  const [showIntro, setShowIntro] = useState(true)
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -408,28 +409,189 @@ export function ApplicationFormClient({ sections, rates, modifiers }: Applicatio
   // Submitted state
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-background p-4 md:p-8">
-        <div className="mx-auto max-w-2xl">
-          <Card className="border-primary/20">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="mb-6 rounded-full bg-primary/10 p-4">
-                <CheckCircle2 className="h-12 w-12 text-primary" />
-              </div>
-              <h2 className="mb-3 text-2xl font-semibold text-foreground">
-                Thank You for Applying
-              </h2>
-              <p className="mb-6 max-w-md text-muted-foreground leading-relaxed">
-                Thank you for applying to Paz Corcovado. We will review your application 
-                and contact you through WhatsApp or email.
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-2xl px-4 py-12 md:py-20">
+          {/* Gratitude Header */}
+          <div className="text-center mb-12">
+            <div className="mb-6 rounded-full bg-primary/10 p-4 inline-flex">
+              <CheckCircle2 className="h-12 w-12 text-primary" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Thank You for Sharing
+            </h1>
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-lg mx-auto">
+              I am deeply grateful for the trust you have placed in me by sharing your story 
+              and intentions. This kind of openness is rare, and I honor it.
+            </p>
+          </div>
+
+          {/* First Name Basis */}
+          <Card className="border-primary/20 bg-primary/5 mb-10">
+            <CardContent className="p-6 md:p-8 text-center">
+              <p className="text-lg text-foreground mb-4">
+                Now that you have shared with me, we are on a first name basis.
               </p>
-              <Button 
-                variant="outline" 
-                onClick={() => router.push('/residents')}
+              <p className="text-muted-foreground mb-2">
+                Feel free to reach out directly:
+              </p>
+              <a 
+                href="https://wa.me/50686182302" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xl font-semibold text-primary hover:underline"
               >
-                Return to Home
-              </Button>
+                +506 8618 2302
+              </a>
+              <p className="text-sm text-muted-foreground mt-2">WhatsApp</p>
             </CardContent>
           </Card>
+
+          {/* Founder Story */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-semibold text-foreground mb-6 text-center">
+              A Little About Me
+            </h2>
+            <div className="space-y-5 text-muted-foreground leading-relaxed">
+              <p>
+                I am Roberto Rodriguez, a Costa Rican founder, poet, and creator of Paz Corcovado, 
+                a nature-led living space on the Osa Peninsula where I invite people to reconnect 
+                with themselves, the ocean, and the rainforest. My path began through a real personal 
+                search, shaped by solitude, transformation, writing, travel, and a deep need to 
+                understand what it means to live with more truth.
+              </p>
+              <p>
+                While walking the Camino de Santiago, I received the poems and spiritual messages 
+                that became <em>The Path That Shines</em>, a book about love, forgiveness, presence, 
+                and the return to my authentic voice.
+              </p>
+              <p>
+                Paz Corcovado is the natural continuation of that journey. Between the rainforest 
+                and the Pacific Ocean, I created a space that is not built around gurus, performance, 
+                or complicated methods, but around the simple power of nature to teach, regulate, 
+                and restore. I see my role as a caretaker of this space, helping people step away 
+                from the noise of modern life so the body can remember its natural rhythm and the 
+                heart can open again.
+              </p>
+            </div>
+          </div>
+
+          {/* Closing */}
+          <div className="border-t border-border pt-8 text-center">
+            <p className="text-muted-foreground mb-6">
+              I will personally review your application and be in touch soon.
+            </p>
+            <p className="text-foreground font-medium mb-8">
+              With gratitude,<br />
+              Roberto
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.href = 'https://pazcorcovado.com'}
+            >
+              Visit Paz Corcovado
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Intro section
+  if (showIntro) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-2xl px-4 py-12 md:py-20">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Apply to Paz Corcovado
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              A quick application that helps us understand if we are a good fit for each other.
+            </p>
+          </div>
+
+          {/* Quick Facts */}
+          <div className="grid gap-4 md:grid-cols-3 mb-12">
+            <div className="flex flex-col items-center text-center p-6 rounded-xl border border-border bg-card">
+              <Clock className="h-8 w-8 text-primary mb-3" />
+              <h3 className="font-semibold text-foreground mb-1">Under 1 Minute</h3>
+              <p className="text-sm text-muted-foreground">Mostly single-choice questions</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-6 rounded-xl border border-border bg-card">
+              <DollarSign className="h-8 w-8 text-primary mb-3" />
+              <h3 className="font-semibold text-foreground mb-1">Instant Rate</h3>
+              <p className="text-sm text-muted-foreground">Get your recommended rate at the end</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-6 rounded-xl border border-border bg-card">
+              <Heart className="h-8 w-8 text-primary mb-3" />
+              <h3 className="font-semibold text-foreground mb-1">Personal Review</h3>
+              <p className="text-sm text-muted-foreground">The founder reviews every application</p>
+            </div>
+          </div>
+
+          {/* Main Value Proposition */}
+          <Card className="border-primary/20 bg-primary/5 mb-8">
+            <CardContent className="p-6 md:p-8">
+              <div className="flex items-start gap-4">
+                <Shield className="h-10 w-10 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground mb-3">
+                    Your guarantee of a focused community
+                  </h2>
+                  <p className="text-muted-foreground leading-relaxed">
+                    This application is your assurance that the people you will be sharing space with 
+                    are as focused and intentional as you are. We are upfront about what Paz is and 
+                    what it is not.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* What We Filter Out */}
+          <div className="mb-12">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
+              We kindly filter out:
+            </h3>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3 text-muted-foreground">
+                <span className="text-primary mt-1">-</span>
+                <span>Surfers looking for a cheap place to crash</span>
+              </li>
+              <li className="flex items-start gap-3 text-muted-foreground">
+                <span className="text-primary mt-1">-</span>
+                <span>People wanting just an experience in nature without community engagement</span>
+              </li>
+              <li className="flex items-start gap-3 text-muted-foreground">
+                <span className="text-primary mt-1">-</span>
+                <span>Those not ready to humble down and be part of a shared living community</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Founder Note */}
+          <div className="border-l-4 border-primary pl-6 mb-12">
+            <p className="text-muted-foreground italic leading-relaxed">
+              &quot;I personally review every application. I mostly use my intuition when making choices, 
+              looking for people who genuinely resonate with what we are building here.&quot;
+            </p>
+            <p className="text-sm text-foreground mt-3 font-medium">
+              - Roberto, Founder
+            </p>
+          </div>
+
+          {/* CTA */}
+          <div className="text-center">
+            <Button 
+              size="lg" 
+              onClick={() => setShowIntro(false)}
+              className="gap-2"
+            >
+              Start Application
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </div>
     )
