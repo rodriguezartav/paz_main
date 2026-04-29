@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection, WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, DayOfWeek, MealType, WeeklyMealPlan, WeeklyMealPlanMeal, WeeklyMealPlanRecipe, DietHeadcount, RateRule, ResidentPriceModifier } from '@/lib/types'
+import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection, WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, DayOfWeek, MealType, WeeklyMealPlan, WeeklyMealPlanMeal, WeeklyMealPlanRecipe, DietHeadcount, RateRule, ResidentPriceModifier, ResidentBill } from '@/lib/types'
 
 // Resident queries
 export async function getResidents(): Promise<Resident[]> {
@@ -1883,13 +1883,95 @@ export async function toggleResidentPriceModifierActive(id: string, isActive: bo
 export async function getActiveResidentPriceModifierForNights(nights: number): Promise<ResidentPriceModifier | null> {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('resident_price_modifiers')
+  .from('resident_price_modifiers')
+  .select('*')
+  .eq('is_active', true)
+  .lte('min_nights', nights)
+  .or(`max_nights.gte.${nights},max_nights.is.null`)
+  .single()
+  
+  if (error) return null
+  return data
+}
+
+// Resident Bill queries
+export async function getResidentBills(): Promise<ResidentBill[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('resident_bills')
+    .select(`
+      *,
+      resident:residents(id, name, email)
+    `)
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getResidentBillsByResidentId(residentId: string): Promise<ResidentBill[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('resident_bills')
     .select('*')
-    .eq('is_active', true)
-    .lte('min_nights', nights)
-    .or(`max_nights.gte.${nights},max_nights.is.null`)
+    .eq('resident_id', residentId)
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getResidentBillById(id: string): Promise<ResidentBill | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('resident_bills')
+    .select(`
+      *,
+      resident:residents(id, name, email)
+    `)
+    .eq('id', id)
     .single()
   
   if (error) return null
   return data
+}
+
+export async function createResidentBill(
+  bill: Omit<ResidentBill, 'id' | 'created_at' | 'updated_at' | 'resident'>
+): Promise<ResidentBill> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('resident_bills')
+    .insert(bill)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function updateResidentBill(
+  id: string,
+  updates: Partial<Omit<ResidentBill, 'id' | 'created_at' | 'updated_at' | 'resident'>>
+): Promise<ResidentBill> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('resident_bills')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function deleteResidentBill(id: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('resident_bills')
+    .delete()
+    .eq('id', id)
+  
+  if (error) throw error
 }
