@@ -467,14 +467,14 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
           <div className="max-h-[400px] overflow-y-auto rounded-lg border">
             <div className={cn(
               "grid gap-2 border-b bg-muted/50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground sticky top-0",
-              rangeLoaded ? "grid-cols-12" : "grid-cols-12"
+              rangeLoaded ? "grid-cols-9 md:grid-cols-12" : "grid-cols-9 md:grid-cols-12"
             )}>
-              <div className={rangeLoaded ? "col-span-3" : "col-span-4"}>Name</div>
-              {rangeLoaded && <div className="col-span-3">Source</div>}
+              <div className={rangeLoaded ? "col-span-3 md:col-span-3" : "col-span-4"}>Name</div>
+              {rangeLoaded && <div className="hidden md:block col-span-3">Source</div>}
               <div className="col-span-2">Type</div>
               <div className="col-span-1">Unit</div>
               <div className="col-span-1 text-center">Per Person</div>
-              <div className="col-span-2 text-center">In Stock</div>
+              <div className="col-span-2">In Stock</div>
             </div>
             {filteredIngredients.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
@@ -509,10 +509,13 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
                   : ''
                 
                 return (
-                  <div key={`${ing.id}-${idx}`} className="grid grid-cols-12 gap-2 items-center border-b px-4 py-2 hover:bg-muted/30">
-                    <div className={cn("font-medium truncate", rangeLoaded ? "col-span-3" : "col-span-4")}>{ing.name}</div>
+                  <div key={`${ing.id}-${idx}`} className={cn(
+                    "grid gap-2 items-center border-b px-4 py-2 hover:bg-muted/30",
+                    rangeLoaded ? "grid-cols-9 md:grid-cols-12" : "grid-cols-9 md:grid-cols-12"
+                  )}>
+                    <div className={cn("font-medium truncate", rangeLoaded ? "col-span-3 md:col-span-3" : "col-span-4")}>{ing.name}</div>
                     {rangeLoaded && (
-                      <div className="col-span-3">
+                      <div className="hidden md:block col-span-3">
                         <Badge variant="outline" className={cn("text-xs truncate max-w-full", sourceBadgeColor)}>
                           {sourceLabel}
                         </Badge>
