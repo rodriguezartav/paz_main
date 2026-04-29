@@ -38,23 +38,25 @@ export async function deleteBuildingAction(id: string) {
 }
 
 // Room actions
-export async function createRoomAction(data: { name: string; description: string; is_private: boolean; building_id: string }) {
+export async function createRoomAction(data: { name: string; description: string; is_private: boolean; building_id: string; room_type: string }) {
   await createRoom({
     name: data.name,
     description: data.description || null,
     is_private: data.is_private,
-    building_id: data.building_id || null
+    building_id: data.building_id || null,
+    room_type: (data.room_type || 'double') as 'private' | 'double' | 'triple' | 'quad'
   })
   revalidatePath('/buildings')
   revalidatePath('/rooms')
 }
 
-export async function updateRoomAction(id: string, data: { name: string; description: string; is_private: boolean; building_id: string }) {
+export async function updateRoomAction(id: string, data: { name: string; description: string; is_private: boolean; building_id: string; room_type?: string }) {
   await updateRoom(id, {
     name: data.name,
     description: data.description || null,
     is_private: data.is_private,
-    building_id: data.building_id || null
+    building_id: data.building_id || null,
+    ...(data.room_type && { room_type: data.room_type as 'private' | 'double' | 'triple' | 'quad' })
   })
   revalidatePath('/buildings')
   revalidatePath('/rooms')
