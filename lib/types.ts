@@ -322,3 +322,19 @@ export interface RateRule {
   created_at: string
   updated_at: string
 }
+
+// Resident Price Modifier Types
+export type AdjustmentType = 'percentage' | 'fixed_amount'
+
+export interface ResidentPriceModifier {
+  id: string
+  name: string
+  min_nights: number
+  max_nights: number | null
+  adjustment_type: AdjustmentType
+  adjustment_value: number
+  is_active: boolean
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
