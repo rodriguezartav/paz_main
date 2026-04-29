@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar, KeyRound, LogOut, DollarSign, Receipt, CalendarCheck } from 'lucide-react'
+import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar, KeyRound, LogOut, DollarSign, Receipt, CalendarCheck, ShoppingCart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { logout } from '@/app/login/actions'
 import { cn } from '@/lib/utils'
@@ -24,6 +24,7 @@ const navSections = [
       { href: '/recipes', label: 'Recipes', icon: ChefHat },
       { href: '/meal-planner', label: 'Meal Planner', icon: CalendarDays },
       { href: '/weekly-calendar', label: 'Weekly Calendar', icon: Calendar },
+      { href: '/shopping-list', label: 'Shopping List', icon: ShoppingCart },
     ],
   },
   {

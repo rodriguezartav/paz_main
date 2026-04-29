@@ -2061,3 +2061,107 @@ export async function deleteScheduledActivity(id: string): Promise<void> {
   
   if (error) throw error
 }
+
+// Shopping List Queries
+export async function getWeeklyMealPlansForShoppingList(): Promise<WeeklyMealPlan[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('weekly_meal_plans')
+    .select('*')
+    .order('week_start_date', { ascending: false })
+    .limit(12)
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getWeeklyMealPlanWithMealsForShoppingList(weeklyMealPlanId: string): Promise<WeeklyMealPlan | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('weekly_meal_plans')
+    .select(`
+      *,
+      meals:weekly_meal_plan_meals(
+        *,
+        recipes:weekly_meal_plan_recipes(
+          *,
+          recipe:recipes(
+            *,
+            recipe_ingredients(
+              *,
+              ingredient:ingredients(*)
+            )
+          )
+        )
+      )
+    `)
+    .eq('id', weeklyMealPlanId)
+    .single()
+  
+  if (error) return null
+  return data
+}
+
+export async function getIngredientsForInventory(): Promise<Ingredient[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('ingredients')
+    .select('*')
+    .order('type')
+    .order('name')
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getShoppingRelevantIngredients(): Promise<Ingredient[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('ingredients')
+    .select('*')
+    .or('add_to_shopping_list_per_person.gt.0,add_to_shopping_list_per_week.gt.0')
+    .order('type')
+    .order('name')
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function updateIngredientStock(id: string, itemsInStock: number): Promise<Ingredient> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('ingredients')
+    .update({ items_in_stock: itemsInStock, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function bulkUpdateIngredientStock(updates: { id: string; items_in_stock: number }[]): Promise<void> {
+  const supabase = await createClient()
+  
+  for (const update of updates) {
+    const { error } = await supabase
+      .from('ingredients')
+      .update({ items_in_stock: update.items_in_stock, updated_at: new Date().toISOString() })
+      .eq('id', update.id)
+    
+    if (error) throw error
+  }
+}
+
+export async function getActiveResidentsForDateRange(startDate: string, endDate: string): Promise<number> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('residents')
+    .select('id')
+    .in('status', ['checked_in', 'staying'])
+    .lte('arrival_date', endDate)
+    .gte('departure_date', startDate)
+  
+  if (error) throw error
+  return data?.length || 0
+}
