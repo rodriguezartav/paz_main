@@ -60,12 +60,18 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
   const [editName, setEditName] = useState('')
   const [editType, setEditType] = useState<IngredientType>('other')
   const [editMeasurement, setEditMeasurement] = useState<Measurement>('unit')
+  const [editPerPerson, setEditPerPerson] = useState<string>('')
+  const [editPerWeek, setEditPerWeek] = useState<string>('')
+  const [editInStock, setEditInStock] = useState<string>('')
   
   // New ingredient state
   const [isAdding, setIsAdding] = useState(false)
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState<IngredientType>('vegetable')
   const [newMeasurement, setNewMeasurement] = useState<Measurement>('kg')
+  const [newPerPerson, setNewPerPerson] = useState<string>('')
+  const [newPerWeek, setNewPerWeek] = useState<string>('')
+  const [newInStock, setNewInStock] = useState<string>('')
 
   // Filter ingredients
   const filteredIngredients = initialIngredients.filter(ing => {
@@ -79,11 +85,17 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
     setEditName(ingredient.name)
     setEditType(ingredient.type)
     setEditMeasurement(ingredient.measurement)
+    setEditPerPerson(ingredient.add_to_shopping_list_per_person?.toString() || '')
+    setEditPerWeek(ingredient.add_to_shopping_list_per_week?.toString() || '')
+    setEditInStock(ingredient.items_in_stock?.toString() || '')
   }
 
   const cancelEdit = () => {
     setEditingId(null)
     setEditName('')
+    setEditPerPerson('')
+    setEditPerWeek('')
+    setEditInStock('')
   }
 
   const saveEdit = () => {
@@ -93,7 +105,10 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
       await updateIngredientAction(editingId, {
         name: editName.trim(),
         type: editType,
-        measurement: editMeasurement
+        measurement: editMeasurement,
+        add_to_shopping_list_per_person: editPerPerson ? parseFloat(editPerPerson) : null,
+        add_to_shopping_list_per_week: editPerWeek ? parseFloat(editPerWeek) : null,
+        items_in_stock: editInStock ? parseFloat(editInStock) : null
       })
       setEditingId(null)
       router.refresh()
@@ -116,9 +131,15 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
       await createIngredientAction({
         name: newName.trim(),
         type: newType,
-        measurement: newMeasurement
+        measurement: newMeasurement,
+        add_to_shopping_list_per_person: newPerPerson ? parseFloat(newPerPerson) : null,
+        add_to_shopping_list_per_week: newPerWeek ? parseFloat(newPerWeek) : null,
+        items_in_stock: newInStock ? parseFloat(newInStock) : null
       })
       setNewName('')
+      setNewPerPerson('')
+      setNewPerWeek('')
+      setNewInStock('')
       setIsAdding(false)
       router.refresh()
     })
@@ -129,6 +150,9 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
     setNewName('')
     setNewType('vegetable')
     setNewMeasurement('kg')
+    setNewPerPerson('')
+    setNewPerWeek('')
+    setNewInStock('')
   }
 
   return (
@@ -173,19 +197,22 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
       <Card>
         <CardHeader className="py-3 px-4 border-b">
           <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            <div className="col-span-5 sm:col-span-6">Name</div>
-            <div className="col-span-3 sm:col-span-3">Type</div>
-            <div className="col-span-2 sm:col-span-2">Unit</div>
-            <div className="col-span-2 sm:col-span-1 text-right">Actions</div>
+            <div className="col-span-3">Name</div>
+            <div className="col-span-2">Type</div>
+            <div className="col-span-1">Unit</div>
+            <div className="col-span-2 text-center">Per Person</div>
+            <div className="col-span-2 text-center">Per Week</div>
+            <div className="col-span-1 text-center">Stock</div>
+            <div className="col-span-1 text-right">Actions</div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {/* Add New Row */}
           {isAdding && (
             <div className="grid grid-cols-12 gap-2 items-center px-4 py-3 bg-primary/5 border-b">
-              <div className="col-span-5 sm:col-span-6">
+              <div className="col-span-3">
                 <Input
-                  placeholder="Ingredient name"
+                  placeholder="Name"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   autoFocus
@@ -195,7 +222,7 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
                   }}
                 />
               </div>
-              <div className="col-span-3 sm:col-span-3">
+              <div className="col-span-2">
                 <Select value={newType} onValueChange={(v) => setNewType(v as IngredientType)}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
@@ -207,7 +234,7 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-2 sm:col-span-2">
+              <div className="col-span-1">
                 <Select value={newMeasurement} onValueChange={(v) => setNewMeasurement(v as Measurement)}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
@@ -219,7 +246,40 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-2 sm:col-span-1 flex justify-end gap-1">
+              <div className="col-span-2">
+                <Input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  placeholder="0.00"
+                  value={newPerPerson}
+                  onChange={(e) => setNewPerPerson(e.target.value)}
+                  className="h-9 text-center"
+                />
+              </div>
+              <div className="col-span-2">
+                <Input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  placeholder="0.00"
+                  value={newPerWeek}
+                  onChange={(e) => setNewPerWeek(e.target.value)}
+                  className="h-9 text-center"
+                />
+              </div>
+              <div className="col-span-1">
+                <Input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  placeholder="0"
+                  value={newInStock}
+                  onChange={(e) => setNewInStock(e.target.value)}
+                  className="h-9 text-center"
+                />
+              </div>
+              <div className="col-span-1 flex justify-end gap-1">
                 <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleAddNew} disabled={isPending || !newName.trim()}>
                   {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 text-green-600" />}
                 </Button>
@@ -247,7 +307,7 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
                 >
                   {editingId === ingredient.id ? (
                     <>
-                      <div className="col-span-5 sm:col-span-6">
+                      <div className="col-span-3">
                         <Input
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
@@ -258,7 +318,7 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
                           }}
                         />
                       </div>
-                      <div className="col-span-3 sm:col-span-3">
+                      <div className="col-span-2">
                         <Select value={editType} onValueChange={(v) => setEditType(v as IngredientType)}>
                           <SelectTrigger className="h-9">
                             <SelectValue />
@@ -270,7 +330,7 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="col-span-2 sm:col-span-2">
+                      <div className="col-span-1">
                         <Select value={editMeasurement} onValueChange={(v) => setEditMeasurement(v as Measurement)}>
                           <SelectTrigger className="h-9">
                             <SelectValue />
@@ -282,7 +342,40 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="col-span-2 sm:col-span-1 flex justify-end gap-1">
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          value={editPerPerson}
+                          onChange={(e) => setEditPerPerson(e.target.value)}
+                          className="h-9 text-center"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          value={editPerWeek}
+                          onChange={(e) => setEditPerWeek(e.target.value)}
+                          className="h-9 text-center"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <Input
+                          type="number"
+                          step="0.001"
+                          min="0"
+                          value={editInStock}
+                          onChange={(e) => setEditInStock(e.target.value)}
+                          className="h-9 text-center"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="col-span-1 flex justify-end gap-1">
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={saveEdit} disabled={isPending || !editName.trim()}>
                           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 text-green-600" />}
                         </Button>
@@ -293,14 +386,23 @@ export function IngredientsPageClient({ initialIngredients }: IngredientsPageCli
                     </>
                   ) : (
                     <>
-                      <div className="col-span-5 sm:col-span-6 font-medium truncate">{ingredient.name}</div>
-                      <div className="col-span-3 sm:col-span-3">
+                      <div className="col-span-3 font-medium truncate">{ingredient.name}</div>
+                      <div className="col-span-2">
                         <Badge variant="outline" className={cn("text-xs", typeColors[ingredient.type])}>
                           {typeOptions.find(t => t.value === ingredient.type)?.label || ingredient.type}
                         </Badge>
                       </div>
-                      <div className="col-span-2 sm:col-span-2 text-sm text-muted-foreground">{ingredient.measurement}</div>
-                      <div className="col-span-2 sm:col-span-1 flex justify-end gap-1">
+                      <div className="col-span-1 text-sm text-muted-foreground">{ingredient.measurement}</div>
+                      <div className="col-span-2 text-sm text-center text-muted-foreground">
+                        {ingredient.add_to_shopping_list_per_person ?? '-'}
+                      </div>
+                      <div className="col-span-2 text-sm text-center text-muted-foreground">
+                        {ingredient.add_to_shopping_list_per_week ?? '-'}
+                      </div>
+                      <div className="col-span-1 text-sm text-center text-muted-foreground">
+                        {ingredient.items_in_stock ?? '-'}
+                      </div>
+                      <div className="col-span-1 flex justify-end gap-1">
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(ingredient)}>
                           <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                         </Button>
