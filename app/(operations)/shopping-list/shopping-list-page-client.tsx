@@ -33,10 +33,16 @@ type RangeIngredient = {
 }
 
 function getDateForDayOfWeek(weekStartDate: string, dayIndex: number): string {
-  const startDate = new Date(weekStartDate)
+  // Parse the date parts directly to avoid timezone issues
+  const [year, month, day] = weekStartDate.split('-').map(Number)
+  const startDate = new Date(year, month - 1, day)
   const targetDate = new Date(startDate)
   targetDate.setDate(startDate.getDate() + dayIndex)
-  return targetDate.toISOString().split('T')[0]
+  // Format as YYYY-MM-DD without timezone conversion
+  const y = targetDate.getFullYear()
+  const m = String(targetDate.getMonth() + 1).padStart(2, '0')
+  const d = String(targetDate.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function formatDate(dateString: string): string {
@@ -45,7 +51,8 @@ function formatDate(dateString: string): string {
 }
 
 function formatWeekRange(weekStartDate: string): string {
-  const start = new Date(weekStartDate)
+  const [year, month, day] = weekStartDate.split('-').map(Number)
+  const start = new Date(year, month - 1, day)
   const end = new Date(start)
   end.setDate(start.getDate() + 6)
   return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`

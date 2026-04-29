@@ -19,16 +19,25 @@ import type {
 const dayOfWeekOrder: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
 function getDateForDayOfWeek(weekStartDate: string, dayOfWeek: DayOfWeek): string {
-  const startDate = new Date(weekStartDate)
+  // Parse the date parts directly to avoid timezone issues
+  const [year, month, day] = weekStartDate.split('-').map(Number)
+  const startDate = new Date(year, month - 1, day)
   const dayIndex = dayOfWeekOrder.indexOf(dayOfWeek)
   const targetDate = new Date(startDate)
   targetDate.setDate(startDate.getDate() + dayIndex)
-  return targetDate.toISOString().split('T')[0]
+  // Format as YYYY-MM-DD without timezone conversion
+  const y = targetDate.getFullYear()
+  const m = String(targetDate.getMonth() + 1).padStart(2, '0')
+  const d = String(targetDate.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function getDayOfWeekFromDate(weekStartDate: string, date: string): DayOfWeek | null {
-  const start = new Date(weekStartDate)
-  const target = new Date(date)
+  // Parse dates directly to avoid timezone issues
+  const [sy, sm, sd] = weekStartDate.split('-').map(Number)
+  const [ty, tm, td] = date.split('-').map(Number)
+  const start = new Date(sy, sm - 1, sd)
+  const target = new Date(ty, tm - 1, td)
   const diffDays = Math.round((target.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
   if (diffDays >= 0 && diffDays < 7) {
     return dayOfWeekOrder[diffDays]
@@ -247,10 +256,16 @@ export async function generateShoppingListAction(
 
     // Get all dates in the selected range
     const datesInRange: string[] = []
-    const current = new Date(startDate)
-    const end = new Date(endDate)
+    // Parse dates directly to avoid timezone issues
+    const [sy, sm, sd] = startDate.split('-').map(Number)
+    const [ey, em, ed] = endDate.split('-').map(Number)
+    const current = new Date(sy, sm - 1, sd)
+    const end = new Date(ey, em - 1, ed)
     while (current <= end) {
-      datesInRange.push(current.toISOString().split('T')[0])
+      const y = current.getFullYear()
+      const m = String(current.getMonth() + 1).padStart(2, '0')
+      const d = String(current.getDate()).padStart(2, '0')
+      datesInRange.push(`${y}-${m}-${d}`)
       current.setDate(current.getDate() + 1)
     }
 
