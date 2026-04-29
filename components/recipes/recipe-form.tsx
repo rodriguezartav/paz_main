@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { RecipeIngredientRow } from './recipe-ingredient-row'
-import type { Recipe, Ingredient, Measurement, RecipeType } from '@/lib/types'
+import type { Recipe, Ingredient, Measurement, RecipeType, MealType } from '@/lib/types'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus } from 'lucide-react'
 
@@ -20,6 +20,7 @@ interface RecipeFormProps {
     name: string
     english_name: string | null
     type: RecipeType | null
+    meal_type: MealType | null
     description: string | null
     notes: string | null
     id?: string
@@ -39,6 +40,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
   const [name, setName] = useState('')
   const [englishName, setEnglishName] = useState('')
   const [recipeType, setRecipeType] = useState<RecipeType | null>(null)
+  const [mealType, setMealType] = useState<MealType | null>(null)
   const [description, setDescription] = useState('')
   const [notes, setNotes] = useState('')
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredientInput[]>([])
@@ -50,6 +52,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
       setName(recipe.name)
       setEnglishName(recipe.english_name || '')
       setRecipeType(recipe.type || null)
+      setMealType(recipe.meal_type || null)
       setDescription(recipe.description || '')
       setNotes(recipe.notes || '')
       setRecipeIngredients(
@@ -64,6 +67,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
       setName('')
       setEnglishName('')
       setRecipeType(null)
+      setMealType(null)
       setDescription('')
       setNotes('')
       setRecipeIngredients([])
@@ -108,6 +112,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
       name,
       english_name: englishName || null,
       type: recipeType,
+      meal_type: mealType,
       description: description || null,
       notes: notes || null,
       recipe_ingredients: ingredientData
@@ -159,6 +164,21 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
                   <SelectItem value="soup">Soup</SelectItem>
                   <SelectItem value="sauce">Sauce</SelectItem>
                   <SelectItem value="dessert">Dessert</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="meal_type">Meal Type</Label>
+              <Select 
+                value={mealType || ''} 
+                onValueChange={(value) => setMealType(value as MealType || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select meal type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="brunch">Brunch</SelectItem>
+                  <SelectItem value="dinner">Dinner</SelectItem>
                 </SelectContent>
               </Select>
             </div>
