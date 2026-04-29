@@ -177,6 +177,9 @@ function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
     if (question.includes('food allergies') && valueStr && valueStr.trim() !== '' && valueStr.toLowerCase() !== 'no' && valueStr.toLowerCase() !== 'none') {
       red.push('Has food allergies/dietary restrictions')
     }
+    if (question.includes('smoke') && valueStr.toLowerCase() === 'yes') {
+      red.push('Smoker')
+    }
   }
   
   return { green: [...new Set(green)], yellow: [...new Set(yellow)], red: [...new Set(red)] }
