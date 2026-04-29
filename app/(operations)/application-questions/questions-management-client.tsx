@@ -458,9 +458,26 @@ export function QuestionsManagementClient({ sections: initialSections }: Questio
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Question</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this question? This will also affect any existing 
-              applications that reference this question. Consider deactivating instead.
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Are you sure you want to delete this question? This will also affect any existing 
+                  applications that reference this question.
+                </p>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800">
+                  <p className="font-medium text-sm">Warning: Check code before deleting</p>
+                  <p className="text-xs mt-1">
+                    Some questions are linked to the automated application review process, including:
+                  </p>
+                  <ul className="text-xs mt-1 list-disc list-inside space-y-0.5">
+                    <li>Resident conversion (diet, gender, age, nationality, arrival/departure dates)</li>
+                    <li>Fit signals analysis (shared living, substance-free, insurance, work online, etc.)</li>
+                  </ul>
+                  <p className="text-xs mt-2">
+                    Deleting these questions may break automated features. Consider deactivating instead.
+                  </p>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -469,7 +486,7 @@ export function QuestionsManagementClient({ sections: initialSections }: Questio
               onClick={handleDeleteQuestion}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              Delete Anyway
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
