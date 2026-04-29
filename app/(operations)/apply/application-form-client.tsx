@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,16 +11,20 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import type { ApplicationSection, ApplicationQuestion } from '@/lib/types'
+import type { ApplicationSection, ApplicationQuestion, RateRule, ResidentPriceModifier, ResidentType, RateRoomType } from '@/lib/types'
 import { saveDraftApplication, submitApplication } from './actions'
-import { ChevronLeft, ChevronRight, Send, CheckCircle2, Loader2, Save } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Send, CheckCircle2, Loader2, Save, DollarSign, Calendar, Home, Users } from 'lucide-react'
+import { calculateRate, isRateCalculationError, formatCurrency } from '@/lib/utils/rate-calculator'
 
 interface ApplicationFormClientProps {
   sections: ApplicationSection[]
+  rates: RateRule[]
+  modifiers: ResidentPriceModifier[]
 }
 
-export function ApplicationFormClient({ sections }: ApplicationFormClientProps) {
+export function ApplicationFormClient({ sections, rates, modifiers }: ApplicationFormClientProps) {
   const router = useRouter()
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, any>>({})
@@ -34,6 +38,78 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
   const currentSection = sections[currentSectionIndex]
   const progress = ((currentSectionIndex + 1) / sections.length) * 100
   const isLastSection = currentSectionIndex === sections.length - 1
+
+  // Helper to find question by partial text match
+  const findQuestionByText = useCallback((searchText: string) => {
+    for (const section of sections) {
+      for (const question of section.questions) {
+        if (question.question_text.toLowerCase().includes(searchText.toLowerCase())) {
+          return question
+        }
+      }
+    }
+    return null
+  }, [sections])
+
+  // Get answers for rate calculation
+  const rateInputs = useMemo(() => {
+    // Find relevant questions
+    const applicationTypeQuestion = findQuestionByText('application type') || findQuestionByText('are you applying as')
+    const roomPreferenceQuestion = findQuestionByText('room preference')
+    const arrivalDateQuestion = findQuestionByText('preferred arrival date')
+    const departureDateQuestion = findQuestionByText('preferred departure date')
+
+    const applicationType = applicationTypeQuestion ? answers[applicationTypeQuestion.id] : null
+    const roomPreference = roomPreferenceQuestion ? answers[roomPreferenceQuestion.id] : null
+    const arrivalDate = arrivalDateQuestion ? answers[arrivalDateQuestion.id] : null
+    const departureDate = departureDateQuestion ? answers[departureDateQuestion.id] : null
+
+    return { applicationType, roomPreference, arrivalDate, departureDate }
+  }, [answers, findQuestionByText])
+
+  // Calculate nights and rate
+  const rateCalculation = useMemo(() => {
+    const { applicationType, roomPreference, arrivalDate, departureDate } = rateInputs
+
+    if (!applicationType || !roomPreference || !arrivalDate || !departureDate) {
+      return null
+    }
+
+    // Calculate nights
+    const arrival = new Date(arrivalDate)
+    const departure = new Date(departureDate)
+    const nights = Math.ceil((departure.getTime() - arrival.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (nights <= 0) {
+      return null
+    }
+
+    // Map application type answer to ResidentType
+    let residentType: ResidentType = 'resident'
+    const typeStr = applicationType.toLowerCase()
+    if (typeStr.includes('volunteer')) {
+      residentType = 'volunteer'
+    } else if (typeStr.includes('retreat')) {
+      residentType = 'retreat'
+    }
+
+    // Map room preference to RateRoomType
+    let roomType: RateRoomType = 'double'
+    const roomStr = roomPreference.toLowerCase()
+    if (roomStr.includes('private')) {
+      roomType = 'private'
+    } else if (roomStr.includes('quad') || roomStr.includes('shared')) {
+      roomType = 'quad'
+    }
+
+    const result = calculateRate(
+      { nights, roomType, residentType },
+      rates,
+      modifiers
+    )
+
+    return { result, nights, arrivalDate, departureDate, residentType, roomType }
+  }, [rateInputs, rates, modifiers])
 
   const updateAnswer = (questionId: string, value: any) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }))
@@ -344,20 +420,60 @@ export function ApplicationFormClient({ sections }: ApplicationFormClientProps) 
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-sidebar/50 px-4 py-6 md:px-8">
-        <div className="mx-auto max-w-2xl">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Apply to Paz Corcovado</h1>
-              <p className="mt-1 text-muted-foreground">
-                Please answer thoughtfully. This helps us understand if Paz is right for you.
-              </p>
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 border-b border-border bg-sidebar/95 backdrop-blur supports-[backdrop-filter]:bg-sidebar/80">
+        <div className="px-4 py-4 md:px-8">
+          <div className="mx-auto max-w-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold text-foreground md:text-2xl">Apply to Paz Corcovado</h1>
+                <p className="mt-0.5 text-sm text-muted-foreground hidden sm:block">
+                  Please answer thoughtfully. This helps us understand if Paz is right for you.
+                </p>
+              </div>
+              {lastSaved && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Save className="h-3 w-3" />
+                  <span className="hidden sm:inline">Saved {lastSaved.toLocaleTimeString()}</span>
+                </div>
+              )}
             </div>
-            {lastSaved && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Save className="h-4 w-4" />
-                <span>Saved {lastSaved.toLocaleTimeString()}</span>
+
+            {/* Rate Preview Banner */}
+            {rateCalculation && !isRateCalculationError(rateCalculation.result) && (
+              <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span className="capitalize">{rateCalculation.residentType}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Home className="h-4 w-4" />
+                      <span className="capitalize">{rateCalculation.roomType}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      <span>{rateCalculation.nights} nights</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-lg font-semibold text-primary">
+                        {formatCurrency(rateCalculation.result.totalCost)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        ({formatCurrency(rateCalculation.result.finalRate)}/night)
+                      </span>
+                    </div>
+                    {rateCalculation.result.modifier && (
+                      <Badge variant="secondary" className="text-xs">
+                        {rateCalculation.result.modifier.adjustment_value}% discount
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>
