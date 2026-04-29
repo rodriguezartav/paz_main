@@ -71,7 +71,7 @@ export function BuildingsPageClient({ initialBuildings, residents }: BuildingsPa
   // Room dialog state
   const [roomDialogOpen, setRoomDialogOpen] = useState(false)
   const [editingRoom, setEditingRoom] = useState<Room | null>(null)
-  const [roomForm, setRoomForm] = useState({ name: '', description: '', is_private: false, building_id: '', room_type: 'double' as const })
+  const [roomForm, setRoomForm] = useState<{ name: string; description: string; is_private: boolean; building_id: string; room_type: 'private' | 'double' | 'triple' | 'quad' }>({ name: '', description: '', is_private: false, building_id: '', room_type: 'double' })
   
   // Bed dialog state
   const [bedDialogOpen, setBedDialogOpen] = useState(false)
