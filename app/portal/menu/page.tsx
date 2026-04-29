@@ -1,7 +1,7 @@
 import { getWeeklyMealPlanByDate } from '@/lib/db/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UtensilsCrossed, ChefHat } from 'lucide-react'
-import type { DayOfWeek, MealType } from '@/lib/types'
+import type { DayOfWeek, MealType, WeeklyMealPlanMeal } from '@/lib/types'
 
 function getWeekStartDate(): string {
   const today = new Date()
@@ -35,11 +35,8 @@ export default async function PortalMenuPage() {
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
   const todayName = dayNames[today.getDay()] as DayOfWeek
 
-  // Define meal type for type safety
-  type MealEntry = NonNullable<typeof mealPlan>['meals'][0]
-  
   // Group meals by day
-  const mealsByDay: Record<DayOfWeek, { brunch?: MealEntry, dinner?: MealEntry }> = {
+  const mealsByDay: Record<DayOfWeek, { brunch?: WeeklyMealPlanMeal, dinner?: WeeklyMealPlanMeal }> = {
     monday: {},
     tuesday: {},
     wednesday: {},
