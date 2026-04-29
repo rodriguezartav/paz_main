@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { RecipeCard } from '@/components/recipes/recipe-card'
 import { RecipeForm } from '@/components/recipes/recipe-form'
 import { RecipeDetailPanel } from '@/components/recipes/recipe-detail-panel'
-import type { Recipe, Ingredient, RecipeType } from '@/lib/types'
+import type { Recipe, Ingredient, RecipeType, MealType } from '@/lib/types'
 import { Plus } from 'lucide-react'
 import { createRecipeAction, updateRecipeAction } from './actions'
 
@@ -43,6 +43,7 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
     name: string
     english_name: string | null
     type: RecipeType | null
+    meal_type: MealType | null
     description: string | null
     notes: string | null
     id?: string
@@ -53,12 +54,12 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
       if (data.id) {
         await updateRecipeAction(
           data.id,
-          { name: data.name, english_name: data.english_name, type: data.type, description: data.description, notes: data.notes },
+          { name: data.name, english_name: data.english_name, type: data.type, meal_type: data.meal_type ?? 'brunch', description: data.description, notes: data.notes },
           data.recipe_ingredients
         )
       } else {
         await createRecipeAction(
-          { name: data.name, english_name: data.english_name, type: data.type, description: data.description, notes: data.notes },
+          { name: data.name, english_name: data.english_name, type: data.type, meal_type: data.meal_type ?? 'brunch', description: data.description, notes: data.notes },
           data.recipe_ingredients
         )
       }
