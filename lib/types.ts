@@ -325,6 +325,26 @@ export interface RateRule {
   updated_at: string
 }
 
+// Resident Bill Types
+export type BillStatus = 'unpaid' | 'partially_paid' | 'paid'
+
+export interface ResidentBill {
+  id: string
+  resident_id: string
+  description: string
+  amount: number
+  tax: number
+  total: number
+  amount_paid: number
+  amount_due: number
+  status: BillStatus
+  payment_details: string | null
+  due_date: string | null
+  created_at: string
+  updated_at: string
+  resident?: Resident
+}
+
 // Resident Price Modifier Types
 export type AdjustmentType = 'percentage' | 'fixed_amount'
 

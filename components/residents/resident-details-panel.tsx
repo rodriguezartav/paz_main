@@ -7,7 +7,7 @@ import { DietBadge } from './diet-badge'
 import { StatusBadge } from './status-badge'
 import { PaymentStatusBadge } from './payment-status-badge'
 import { BalanceDueBadge } from './balance-due-badge'
-import type { Resident, Payment, Application, Room } from '@/lib/types'
+import type { Resident, Payment, Application, Room, ResidentBill, BillStatus } from '@/lib/types'
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import {
   User, Mail, Phone, AlertTriangle, 
   Calendar, MapPin, FileText, 
   CheckCircle2, XCircle, CreditCard,
-  DoorOpen, Edit, ExternalLink, AlertCircle, Loader2, DollarSign
+  DoorOpen, Edit, ExternalLink, AlertCircle, Loader2, DollarSign, Receipt, Plus
 } from 'lucide-react'
 import type { ApplicationAnswer } from '@/lib/types'
 import { markResidentCheckedInAction, markResidentCheckedOutAction, updateResidentChecklistAction, assignBedToResidentAction, updateResidentStayAction } from '@/app/(operations)/residents/actions'
@@ -37,6 +37,7 @@ interface ResidentDetailsPanelProps {
   payment?: Payment | null
   application?: Application | null
   rooms?: Room[]
+  bills?: ResidentBill[]
 }
 
 function formatDate(dateString: string): string {
@@ -139,7 +140,7 @@ function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
   return { green: [...new Set(green)], yellow: [...new Set(yellow)], red: [...new Set(red)] }
 }
 
-export function ResidentDetailsPanel({ resident, payment, application, rooms = [] }: ResidentDetailsPanelProps) {
+export function ResidentDetailsPanel({ resident, payment, application, rooms = [], bills = [] }: ResidentDetailsPanelProps) {
   const nights = calculateNights(resident.arrival_date, resident.departure_date)
   const [isPending, startTransition] = useTransition()
   const [showBedDialog, setShowBedDialog] = useState(false)
@@ -547,6 +548,78 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
           </Card>
           )
         })()}
+
+      {/* Bills Card */}
+      <Card className="border-border bg-card">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-muted-foreground" />
+            Bills
+          </CardTitle>
+          <Link href={`/bills?resident=${resident.id}`}>
+            <Button variant="outline" size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              New Bill
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {bills.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No bills for this resident.</p>
+          ) : (
+            <div className="space-y-3">
+              {bills.map((bill) => {
+                const statusStyles: Record<BillStatus, string> = {
+                  unpaid: 'bg-red-100 text-red-800 border-red-200',
+                  partially_paid: 'bg-amber-100 text-amber-800 border-amber-200',
+                  paid: 'bg-green-100 text-green-800 border-green-200',
+                }
+                const statusLabels: Record<BillStatus, string> = {
+                  unpaid: 'Unpaid',
+                  partially_paid: 'Partial',
+                  paid: 'Paid',
+                }
+                return (
+                  <div
+                    key={bill.id}
+                    className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{bill.description}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${statusStyles[bill.status]}`}>
+                          {statusLabels[bill.status]}
+                        </span>
+                        {bill.due_date && (
+                          <span className="text-xs text-muted-foreground">
+                            Due {new Date(bill.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">${bill.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                      {bill.amount_due > 0 && (
+                        <p className="text-xs text-amber-600">Due: ${bill.amount_due.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+              <div className="pt-2 border-t border-border">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Billed</span>
+                  <span className="font-semibold">${bills.reduce((sum, b) => sum + b.total, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Due</span>
+                  <span className="font-semibold text-amber-600">${bills.reduce((sum, b) => sum + b.amount_due, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Admin Actions */}
       <Card className="border-border bg-card">
