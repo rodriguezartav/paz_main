@@ -35,8 +35,11 @@ export default async function PortalMenuPage() {
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
   const todayName = dayNames[today.getDay()] as DayOfWeek
 
+  // Define meal type for type safety
+  type MealEntry = NonNullable<typeof mealPlan>['meals'][0]
+  
   // Group meals by day
-  const mealsByDay: Record<DayOfWeek, { brunch?: typeof mealPlan.meals[0], dinner?: typeof mealPlan.meals[0] }> = {
+  const mealsByDay: Record<DayOfWeek, { brunch?: MealEntry, dinner?: MealEntry }> = {
     monday: {},
     tuesday: {},
     wednesday: {},
