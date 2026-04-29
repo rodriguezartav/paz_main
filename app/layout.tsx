@@ -1,11 +1,16 @@
 import type { Metadata } from 'next'
-import { Nunito } from 'next/font/google'
+import localFont from 'next/font/local'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const nunito = Nunito({ 
-  subsets: ['latin'],
-  variable: '--font-nunito'
+const polymath = localFont({
+  src: './fonts/Polymath-Regular.woff2',
+  variable: '--font-polymath',
+})
+
+const polymathDisplay = localFont({
+  src: './fonts/PolymathDisp-Regular.woff2',
+  variable: '--font-polymath-display',
 })
 
 export const metadata: Metadata = {
@@ -20,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-background">
-      <body className={`${nunito.className} font-sans antialiased`}>
+      <body className={`${polymath.variable} ${polymathDisplay.variable} font-sans antialiased`}>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

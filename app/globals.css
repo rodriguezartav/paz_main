@@ -21,19 +21,19 @@
   --card-foreground: #403B3A;
   --popover: #FFFDF9;
   --popover-foreground: #403B3A;
-  --primary: #C38E6A;
+  --primary: #868F71;
   --primary-foreground: #FFFDF9;
-  --secondary: #868F71;
+  --secondary: #C38E6A;
   --secondary-foreground: #FFFDF9;
   --muted: #EDE5D5;
   --muted-foreground: #6F6A63;
   --accent: #868F71;
   --accent-foreground: #FFFDF9;
-  --destructive: #B85C4A;
+  --destructive: #C38E6A;
   --destructive-foreground: #FFFDF9;
   --border: #B2A999;
   --input: #B2A999;
-  --ring: #C38E6A;
+  --ring: #868F71;
   --chart-1: #C38E6A;
   --chart-2: #868F71;
   --chart-3: #817D90;
@@ -42,16 +42,17 @@
   --radius: 0.75rem;
   --sidebar: #FFFDF9;
   --sidebar-foreground: #403B3A;
-  --sidebar-primary: #C38E6A;
+  --sidebar-primary: #868F71;
   --sidebar-primary-foreground: #FFFDF9;
   --sidebar-accent: #EDE5D5;
   --sidebar-accent-foreground: #403B3A;
   --sidebar-border: #B2A999;
-  --sidebar-ring: #C38E6A;
+  --sidebar-ring: #868F71;
 }
 
 @theme inline {
-  --font-sans: 'Nunito', 'Geist', sans-serif;
+  --font-sans: var(--font-polymath), sans-serif;
+  --font-display: var(--font-polymath-display), sans-serif;
   --font-mono: 'Geist Mono', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -106,5 +107,15 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .paz-title {
+    font-family: var(--font-polymath-display), sans-serif;
+    color: var(--paz-green);
+  }
+  .font-display {
+    font-family: var(--font-polymath-display), sans-serif;
   }
 }
