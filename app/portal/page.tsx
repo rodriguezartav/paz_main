@@ -23,7 +23,7 @@ export default async function PortalPage() {
   const today = new Date()
   const startDate = formatDateYMD(today)
   const endDateObj = new Date(today)
-  endDateObj.setDate(today.getDate() + 4) // Next 5 days (today + 4)
+  endDateObj.setDate(today.getDate() + 2) // Next 3 days (today + 2)
   const endDate = formatDateYMD(endDateObj)
   
   const [activities, meals] = await Promise.all([
@@ -43,12 +43,12 @@ export default async function PortalPage() {
     if (meal.meal_type === 'dinner') entry.dinner = meal
   }
 
-  // Generate next 5 days
-  const next5Days: { date: string; dateObj: Date; isToday: boolean }[] = []
-  for (let i = 0; i < 5; i++) {
+  // Generate next 3 days
+  const next3Days: { date: string; dateObj: Date; isToday: boolean }[] = []
+  for (let i = 0; i < 3; i++) {
     const d = new Date(today)
     d.setDate(today.getDate() + i)
-    next5Days.push({
+    next3Days.push({
       date: formatDateYMD(d),
       dateObj: d,
       isToday: i === 0
@@ -74,7 +74,7 @@ export default async function PortalPage() {
 
       {/* Content Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Next 5 Days Menu */}
+        {/* Next 3 Days Menu */}
         <Card className="md:col-span-2 lg:col-span-2 border-border">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -89,7 +89,7 @@ export default async function PortalPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {next5Days.map(({ date, dateObj, isToday }) => {
+              {next3Days.map(({ date, dateObj, isToday }) => {
                 const dayMeals = mealsByDate.get(date)
                 const hasMeals = dayMeals?.brunch || dayMeals?.dinner
                 
