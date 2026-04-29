@@ -1,28 +1,60 @@
-import { getPublicActivitiesForNextDays, getWeeklyMealPlanByDate } from '@/lib/db/queries'
+import { getPublicActivitiesForNextDays, getMealsWithPrepDateInRange } from '@/lib/db/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UtensilsCrossed, CalendarCheck, Sun, Leaf } from 'lucide-react'
 import Link from 'next/link'
 
-function getWeekStartDate(): string {
-  const today = new Date()
-  const day = today.getDay()
-  const diff = today.getDate() - day + (day === 0 ? -6 : 1)
-  const monday = new Date(today.setDate(diff))
-  return monday.toISOString().split('T')[0]
+
+function formatDateYMD(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function formatDayLabel(date: Date, isToday: boolean): string {
+  if (isToday) return 'Today'
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  if (formatDateYMD(date) === formatDateYMD(tomorrow)) return 'Tomorrow'
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
 export default async function PortalPage() {
-  const weekStart = getWeekStartDate()
-  const [activities, mealPlan] = await Promise.all([
+  const today = new Date()
+  const startDate = formatDateYMD(today)
+  const endDateObj = new Date(today)
+  endDateObj.setDate(today.getDate() + 4) // Next 5 days (today + 4)
+  const endDate = formatDateYMD(endDateObj)
+  
+  const [activities, meals] = await Promise.all([
     getPublicActivitiesForNextDays(3),
-    getWeeklyMealPlanByDate(weekStart),
+    getMealsWithPrepDateInRange(startDate, endDate, 0), // 0 offset since we want served dates, not prep dates
   ])
 
-  const today = new Date()
-  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-  const todayName = dayNames[today.getDay()]
-  
-  const todayMeals = mealPlan?.meals?.filter(m => m.day_of_week === todayName) || []
+  // Group meals by date
+  const mealsByDate = new Map<string, { brunch?: typeof meals[0], dinner?: typeof meals[0] }>()
+  for (const meal of meals) {
+    if (!meal.meal_date) continue
+    if (!mealsByDate.has(meal.meal_date)) {
+      mealsByDate.set(meal.meal_date, {})
+    }
+    const entry = mealsByDate.get(meal.meal_date)!
+    if (meal.meal_type === 'brunch') entry.brunch = meal
+    if (meal.meal_type === 'dinner') entry.dinner = meal
+  }
+
+  // Generate next 5 days
+  const next5Days: { date: string; dateObj: Date; isToday: boolean }[] = []
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(today)
+    d.setDate(today.getDate() + i)
+    next5Days.push({
+      date: formatDateYMD(d),
+      dateObj: d,
+      isToday: i === 0
+    })
+  }
+
   const upcomingActivities = activities.slice(0, 3)
 
   return (
@@ -40,42 +72,63 @@ export default async function PortalPage() {
         </p>
       </div>
 
-      {/* Quick Links Grid */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Today's Menu Preview */}
-        <Link href="/portal/menu">
-          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer border-border">
-            <CardHeader className="pb-3">
+      {/* Content Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Next 5 Days Menu */}
+        <Card className="md:col-span-2 lg:col-span-2 border-border">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <UtensilsCrossed className="h-5 w-5 text-primary" />
-                Today&apos;s Menu
+                Menu
               </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {todayMeals.length > 0 ? (
-                <div className="space-y-3">
-                  {todayMeals.map((meal) => (
-                    <div key={meal.id} className="border-l-2 border-primary/30 pl-3">
-                      <p className="text-sm font-medium capitalize text-foreground">
-                        {meal.meal_type}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {meal.recipes?.map(r => r.recipe?.name).filter(Boolean).join(', ') || 'Menu coming soon'}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No menu planned for today. Check back soon!
-                </p>
-              )}
-              <p className="text-xs text-primary mt-4">
+              <Link href="/portal/menu" className="text-xs text-primary hover:underline">
                 View full week &rarr;
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {next5Days.map(({ date, dateObj, isToday }) => {
+                const dayMeals = mealsByDate.get(date)
+                const hasMeals = dayMeals?.brunch || dayMeals?.dinner
+                
+                return (
+                  <div 
+                    key={date} 
+                    className={`rounded-lg p-3 ${isToday ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-muted/30'}`}
+                  >
+                    <p className={`text-sm font-medium mb-2 ${isToday ? 'text-primary' : 'text-foreground'}`}>
+                      {formatDayLabel(dateObj, isToday)}
+                    </p>
+                    {hasMeals ? (
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {/* Brunch */}
+                        <div className="border-l-2 border-primary/30 pl-3">
+                          <p className="text-xs font-medium text-muted-foreground uppercase">Brunch</p>
+                          <p className="text-sm text-foreground">
+                            {dayMeals?.brunch?.recipes?.map(r => r.recipe?.name).filter(Boolean).join(', ') || 'Not planned'}
+                          </p>
+                        </div>
+                        {/* Dinner */}
+                        <div className="border-l-2 border-primary/30 pl-3">
+                          <p className="text-xs font-medium text-muted-foreground uppercase">Dinner</p>
+                          <p className="text-sm text-foreground">
+                            {dayMeals?.dinner?.recipes?.map(r => r.recipe?.name).filter(Boolean).join(', ') || 'Not planned'}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">
+                        Menu not yet planned
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Upcoming Activities Preview */}
         <Link href="/portal/activities">
