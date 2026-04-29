@@ -144,6 +144,9 @@ function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
     if (question.includes('which statement feels most true') && valueStr.includes('not sure yet')) {
       yellow.push('Unsure about expectations')
     }
+    if (question.includes('which of the following have you experienced') && (!valueStr || valueStr.trim() === '' || valueStr === '[]')) {
+      yellow.push('No prior relevant experiences selected')
+    }
     
     // Red signals
     if (question.includes('which statement feels most true') && valueStr.includes('comfortable retreat')) {
