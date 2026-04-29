@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection, WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, DayOfWeek, MealType, WeeklyMealPlan, WeeklyMealPlanMeal, WeeklyMealPlanRecipe, DietHeadcount, RateRule } from '@/lib/types'
+import type { Resident, Payment, Ingredient, Recipe, RecipeIngredient, Building, Room, Bed, ResidentBed, ApplicationQuestion, Application, ApplicationAnswer, ApplicationSection, WeeklyMenuTemplate, WeeklyMenuTemplateMeal, WeeklyMenuTemplateMealRecipe, DayOfWeek, MealType, WeeklyMealPlan, WeeklyMealPlanMeal, WeeklyMealPlanRecipe, DietHeadcount, RateRule, ResidentPriceModifier } from '@/lib/types'
 
 // Resident queries
 export async function getResidents(): Promise<Resident[]> {
@@ -1814,4 +1814,76 @@ export async function updateRateRule(
 
 export async function toggleRateRuleActive(id: string, isActive: boolean): Promise<RateRule> {
   return updateRateRule(id, { is_active: isActive })
+}
+
+// Resident Price Modifier queries
+export async function getResidentPriceModifiers(): Promise<ResidentPriceModifier[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('resident_price_modifiers')
+    .select('*')
+    .order('min_nights', { ascending: true })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getResidentPriceModifierById(id: string): Promise<ResidentPriceModifier | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('resident_price_modifiers')
+    .select('*')
+    .eq('id', id)
+    .single()
+  
+  if (error) return null
+  return data
+}
+
+export async function createResidentPriceModifier(
+  modifier: Omit<ResidentPriceModifier, 'id' | 'created_at' | 'updated_at'>
+): Promise<ResidentPriceModifier> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('resident_price_modifiers')
+    .insert(modifier)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function updateResidentPriceModifier(
+  id: string,
+  updates: Partial<Omit<ResidentPriceModifier, 'id' | 'created_at' | 'updated_at'>>
+): Promise<ResidentPriceModifier> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('resident_price_modifiers')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return data
+}
+
+export async function toggleResidentPriceModifierActive(id: string, isActive: boolean): Promise<ResidentPriceModifier> {
+  return updateResidentPriceModifier(id, { is_active: isActive })
+}
+
+export async function getActiveResidentPriceModifierForNights(nights: number): Promise<ResidentPriceModifier | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('resident_price_modifiers')
+    .select('*')
+    .eq('is_active', true)
+    .lte('min_nights', nights)
+    .or(`max_nights.gte.${nights},max_nights.is.null`)
+    .single()
+  
+  if (error) return null
+  return data
 }
