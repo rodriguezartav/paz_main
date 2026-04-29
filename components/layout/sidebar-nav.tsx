@@ -39,7 +39,7 @@ const navSections = [
     ],
   },
   {
-    title: 'Buildings',
+    title: 'Administration',
     icon: Building2,
     items: [
       { href: '/buildings', label: 'Manage Buildings', icon: Building2 },
