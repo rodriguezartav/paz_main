@@ -15,6 +15,10 @@ const typeConfig: Record<IngredientType, { label: string; className: string }> =
     label: 'Vegetable',
     className: 'bg-paz-green/20 text-paz-green border-paz-green'
   },
+  roots: {
+    label: 'Roots',
+    className: 'bg-orange-100 text-orange-700 border-orange-300'
+  },
   fruit: {
     label: 'Fruit',
     className: 'bg-amber-100 text-amber-700 border-amber-300'
