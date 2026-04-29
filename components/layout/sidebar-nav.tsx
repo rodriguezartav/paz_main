@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar, KeyRound, LogOut, DollarSign, Receipt } from 'lucide-react'
+import { Users, Carrot, ChefHat, UtensilsCrossed, UserCircle, Building2, BedDouble, ClipboardList, FileText, Settings, LayoutDashboard, CalendarDays, Calendar, KeyRound, LogOut, DollarSign, Receipt, CalendarCheck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { logout } from '@/app/login/actions'
 import { cn } from '@/lib/utils'
@@ -45,6 +45,7 @@ const navSections = [
       { href: '/buildings', label: 'Manage Buildings', icon: Building2 },
       { href: '/rooms', label: 'Rooms', icon: BedDouble },
       { href: '/rates', label: 'Guest Rates', icon: DollarSign },
+      { href: '/activities', label: 'Activities', icon: CalendarCheck },
     ],
   },
 ]
