@@ -305,3 +305,20 @@ export interface DietHeadcount {
   vegan: number
   total: number
 }
+
+// Rate Rule Types
+export type RateApplicationType = 'resident' | 'volunteer' | 'retreat'
+export type RateRoomType = 'quad' | 'double' | 'private' | 'any'
+
+export interface RateRule {
+  id: string
+  name: string
+  application_type: RateApplicationType
+  room_type: RateRoomType
+  base_nightly_rate: number
+  currency: string
+  is_active: boolean
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
