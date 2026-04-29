@@ -106,6 +106,7 @@ export interface Recipe {
   type: RecipeType | null
   suitable_for_vegetarian?: boolean
   suitable_for_vegan?: boolean
+  is_breakfast?: boolean
   created_at: string
   updated_at: string
   recipe_ingredients?: RecipeIngredient[]

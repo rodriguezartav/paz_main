@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Recipe } from '@/lib/types'
-import { ChefHat, Eye, Edit, Settings2 } from 'lucide-react'
+import { ChefHat, Eye, Edit, Settings2, Coffee } from 'lucide-react'
 
 interface RecipeCardProps {
   recipe: Recipe
@@ -46,6 +46,12 @@ export function RecipeCard({ recipe, onView, onEdit }: RecipeCardProps) {
       <CardContent className="space-y-4">
         {/* Type and Ingredient Count */}
         <div className="flex items-center gap-2 flex-wrap">
+          {recipe.is_breakfast && (
+            <Badge variant="default" className="bg-amber-100 text-amber-800 border-amber-200">
+              <Coffee className="mr-1 h-3 w-3" />
+              Breakfast
+            </Badge>
+          )}
           {recipe.type && (
             <Badge variant="secondary" className="capitalize">
               {recipe.type}
