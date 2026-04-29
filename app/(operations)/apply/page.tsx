@@ -1,4 +1,4 @@
-import { getApplicationSections } from '@/lib/db/queries'
+import { getApplicationSections, getRateRules, getResidentPriceModifiers } from '@/lib/db/queries'
 import { ApplicationFormClient } from './application-form-client'
 
 export const metadata = {
@@ -7,7 +7,11 @@ export const metadata = {
 }
 
 export default async function ApplyPage() {
-  const sections = await getApplicationSections(true)
+  const [sections, rates, modifiers] = await Promise.all([
+    getApplicationSections(true),
+    getRateRules(),
+    getResidentPriceModifiers()
+  ])
   
-  return <ApplicationFormClient sections={sections} />
+  return <ApplicationFormClient sections={sections} rates={rates} modifiers={modifiers} />
 }
