@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = [
+  '/',
   '/login',
   '/apply',
   '/calendar',
