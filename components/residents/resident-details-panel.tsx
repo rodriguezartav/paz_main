@@ -125,6 +125,9 @@ function analyzeFitSignals(answers: ApplicationAnswer[] = []) {
     if (question.includes('hours per day') && valueStr === '5+') {
       red.push('Expects 5+ hours online daily')
     }
+    if (question.includes('food allergies') && valueStr && valueStr.trim() !== '' && valueStr.toLowerCase() !== 'no' && valueStr.toLowerCase() !== 'none') {
+      red.push('Has food allergies/dietary restrictions')
+    }
   }
   
   return { green: [...new Set(green)], yellow: [...new Set(yellow)], red: [...new Set(red)] }
