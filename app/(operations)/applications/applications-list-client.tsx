@@ -47,8 +47,8 @@ const statusLabels: Record<ApplicationStatus, string> = {
 
 function formatDate(dateString: string | null): string {
   if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const date = new Date(dateString.includes('T') ? dateString : dateString + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
 function getPreferredArrivalDate(application: Application): string | null {
