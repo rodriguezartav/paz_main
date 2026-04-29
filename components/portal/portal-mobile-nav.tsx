@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, UtensilsCrossed, CalendarCheck, BookOpen } from 'lucide-react'
+import { Home, UtensilsCrossed, CalendarCheck, BookOpen, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/portal/menu', label: 'Menu', icon: UtensilsCrossed },
   { href: '/portal/activities', label: 'Activities', icon: CalendarCheck },
   { href: '/portal/guidelines', label: 'Guidelines', icon: BookOpen },
+  { href: '/dashboard', label: 'Staff', icon: LayoutDashboard },
 ]
 
 export function PortalMobileNav() {
