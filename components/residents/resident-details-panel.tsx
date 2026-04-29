@@ -310,6 +310,13 @@ export function ResidentDetailsPanel({ resident, payment, application, rooms = [
                   )}
                 </div>
               </div>
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Resident Type</p>
+                  <p className="text-card-foreground capitalize">{resident.resident_type || 'resident'}</p>
+                </div>
+              </div>
             </div>
             {resident.notes && (
               <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-3">
