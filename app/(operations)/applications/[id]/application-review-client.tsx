@@ -245,11 +245,10 @@ export function ApplicationReviewClient({ application }: ApplicationReviewClient
     if (preferredArrival) {
       setArrivalDate(preferredArrival)
     }
-    // Default departure to 2 weeks after arrival
-    if (preferredArrival) {
-      const arrival = new Date(preferredArrival)
-      arrival.setDate(arrival.getDate() + 14)
-      setDepartureDate(arrival.toISOString().split('T')[0])
+    // Pre-fill departure date from application
+    const preferredDeparture = getAnswerValue('preferred departure date')
+    if (preferredDeparture) {
+      setDepartureDate(preferredDeparture)
     }
     setShowAcceptDialog(true)
   }

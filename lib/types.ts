@@ -124,12 +124,15 @@ export interface Building {
 }
 
 // Room and Bed Types
+export type RoomType = 'private' | 'double' | 'triple' | 'quad'
+
 export interface Room {
   id: string
   building_id: string | null
   name: string
   description: string | null
   is_private: boolean
+  room_type: RoomType
   created_at: string
   updated_at: string
   beds?: Bed[]
