@@ -113,8 +113,10 @@ export function ApplicationFormClient({ sections, rates, modifiers }: Applicatio
     const roomStr = roomPreference.toLowerCase()
     if (roomStr.includes('private')) {
       roomType = 'private'
-    } else if (roomStr.includes('quad') || roomStr.includes('shared')) {
+    } else if (roomStr.includes('quad')) {
       roomType = 'quad'
+    } else if (roomStr.includes('double')) {
+      roomType = 'double'
     }
 
     const result = calculateRate(
