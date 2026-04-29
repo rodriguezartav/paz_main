@@ -282,6 +282,7 @@ export interface WeeklyMealPlanMeal {
   weekly_meal_plan_id: string
   day_of_week: DayOfWeek
   meal_type: MealType
+  meal_date: string | null
   headcount_eats_all: number
   headcount_vegetarian: number
   headcount_vegan: number
