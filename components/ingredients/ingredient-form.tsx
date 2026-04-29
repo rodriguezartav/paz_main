@@ -38,6 +38,9 @@ export function IngredientForm({ open, onOpenChange, ingredient, onSave, isLoadi
   const [name, setName] = useState('')
   const [type, setType] = useState<IngredientType>('staple')
   const [measurement, setMeasurement] = useState<Measurement>('kg')
+  const [perPerson, setPerPerson] = useState<string>('')
+  const [perWeek, setPerWeek] = useState<string>('')
+  const [inStock, setInStock] = useState<string>('')
 
   const isEditing = !!ingredient
 
@@ -46,10 +49,16 @@ export function IngredientForm({ open, onOpenChange, ingredient, onSave, isLoadi
       setName(ingredient.name)
       setType(ingredient.type)
       setMeasurement(ingredient.measurement)
+      setPerPerson(ingredient.add_to_shopping_list_per_person?.toString() || '')
+      setPerWeek(ingredient.add_to_shopping_list_per_week?.toString() || '')
+      setInStock(ingredient.items_in_stock?.toString() || '')
     } else {
       setName('')
       setType('staple')
       setMeasurement('kg')
+      setPerPerson('')
+      setPerWeek('')
+      setInStock('')
     }
   }, [ingredient])
 
@@ -59,7 +68,10 @@ export function IngredientForm({ open, onOpenChange, ingredient, onSave, isLoadi
       id: ingredient?.id,
       name,
       type,
-      measurement
+      measurement,
+      add_to_shopping_list_per_person: perPerson ? parseFloat(perPerson) : null,
+      add_to_shopping_list_per_week: perWeek ? parseFloat(perWeek) : null,
+      items_in_stock: inStock ? parseFloat(inStock) : null
     })
   }
 
@@ -112,6 +124,53 @@ export function IngredientForm({ open, onOpenChange, ingredient, onSave, isLoadi
               </SelectContent>
             </Select>
           </div>
+          
+          <div className="border-t pt-4 mt-4">
+            <p className="text-sm font-medium text-foreground mb-3">Shopping List Settings</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="perPerson">Per Person/Day</Label>
+                <Input
+                  id="perPerson"
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  value={perPerson}
+                  onChange={(e) => setPerPerson(e.target.value)}
+                  placeholder="0.00"
+                />
+                <p className="text-xs text-muted-foreground">Amount needed per person per day</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="perWeek">Per Week (fixed)</Label>
+                <Input
+                  id="perWeek"
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  value={perWeek}
+                  onChange={(e) => setPerWeek(e.target.value)}
+                  placeholder="0.00"
+                />
+                <p className="text-xs text-muted-foreground">Fixed weekly amount</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="inStock">Items in Stock</Label>
+            <Input
+              id="inStock"
+              type="number"
+              step="0.001"
+              min="0"
+              value={inStock}
+              onChange={(e) => setInStock(e.target.value)}
+              placeholder="0.00"
+            />
+            <p className="text-xs text-muted-foreground">Current inventory count</p>
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
               Cancel

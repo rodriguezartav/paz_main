@@ -46,6 +46,7 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
     meal_type: MealType | null
     description: string | null
     notes: string | null
+    is_breakfast: boolean
     id?: string
     recipe_ingredients: { ingredient_id: string; amount: number; measurement: string }[]
   }) => {
@@ -54,12 +55,12 @@ export function RecipesPageClient({ initialRecipes, ingredients }: RecipesPageCl
       if (data.id) {
         await updateRecipeAction(
           data.id,
-          { name: data.name, english_name: data.english_name, type: data.type, meal_type: data.meal_type ?? 'brunch', description: data.description, notes: data.notes },
+          { name: data.name, english_name: data.english_name, type: data.type, meal_type: data.meal_type ?? 'brunch', description: data.description, notes: data.notes, is_breakfast: data.is_breakfast },
           data.recipe_ingredients
         )
       } else {
         await createRecipeAction(
-          { name: data.name, english_name: data.english_name, type: data.type, meal_type: data.meal_type ?? 'brunch', description: data.description, notes: data.notes },
+          { name: data.name, english_name: data.english_name, type: data.type, meal_type: data.meal_type ?? 'brunch', description: data.description, notes: data.notes, is_breakfast: data.is_breakfast },
           data.recipe_ingredients
         )
       }

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { RecipeIngredientRow } from './recipe-ingredient-row'
 import type { Recipe, Ingredient, Measurement, RecipeType, MealType } from '@/lib/types'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -23,6 +24,7 @@ interface RecipeFormProps {
     meal_type: MealType | null
     description: string | null
     notes: string | null
+    is_breakfast: boolean
     id?: string
     recipe_ingredients: { ingredient_id: string; amount: number; measurement: string }[]
   }) => void
@@ -43,6 +45,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
   const [mealType, setMealType] = useState<MealType | null>(null)
   const [description, setDescription] = useState('')
   const [notes, setNotes] = useState('')
+  const [isBreakfast, setIsBreakfast] = useState(false)
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredientInput[]>([])
 
   const isEditing = !!recipe
@@ -55,6 +58,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
       setMealType(recipe.meal_type || null)
       setDescription(recipe.description || '')
       setNotes(recipe.notes || '')
+      setIsBreakfast(recipe.is_breakfast || false)
       setRecipeIngredients(
         (recipe.recipe_ingredients || []).map(ri => ({
           tempId: ri.id,
@@ -70,6 +74,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
       setMealType(null)
       setDescription('')
       setNotes('')
+      setIsBreakfast(false)
       setRecipeIngredients([])
     }
   }, [recipe])
@@ -115,6 +120,7 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
       meal_type: mealType,
       description: description || null,
       notes: notes || null,
+      is_breakfast: isBreakfast,
       recipe_ingredients: ingredientData
     })
   }
@@ -200,6 +206,16 @@ export function RecipeForm({ open, onOpenChange, recipe, ingredients, onSave, is
                 placeholder="Cooking tips, variations, etc."
                 rows={3}
               />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="is_breakfast"
+                checked={isBreakfast}
+                onCheckedChange={(checked) => setIsBreakfast(checked === true)}
+              />
+              <Label htmlFor="is_breakfast" className="text-sm font-normal cursor-pointer">
+                Breakfast recipe (include in shopping list)
+              </Label>
             </div>
           </div>
 

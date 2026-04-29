@@ -78,6 +78,9 @@ export interface Ingredient {
   name: string
   type: IngredientType
   measurement: Measurement
+  add_to_shopping_list_per_person: number | null
+  add_to_shopping_list_per_week: number | null
+  items_in_stock: number | null
   created_at: string
   updated_at: string
 }
@@ -106,6 +109,7 @@ export interface Recipe {
   type: RecipeType | null
   suitable_for_vegetarian?: boolean
   suitable_for_vegan?: boolean
+  is_breakfast?: boolean
   created_at: string
   updated_at: string
   recipe_ingredients?: RecipeIngredient[]
