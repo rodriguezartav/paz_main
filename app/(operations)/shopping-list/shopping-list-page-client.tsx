@@ -521,7 +521,7 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
                   : ''
                 
                 return (
-                  <div key={`${ing.id}-${idx}`} className={cn(
+                  <div key={ing.id} className={cn(
                     "grid gap-2 items-center border-b px-4 py-2 hover:bg-muted/30",
                     rangeLoaded ? "grid-cols-9 md:grid-cols-12" : "grid-cols-9 md:grid-cols-12"
                   )}>
