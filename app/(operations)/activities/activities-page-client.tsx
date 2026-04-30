@@ -349,11 +349,11 @@ export function ActivitiesPageClient({ initialActivities }: ActivitiesPageClient
                                 )}
                               </div>
                               
-                              {activity.notes && (
-                                <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                                  {activity.notes}
-                                </p>
-                              )}
+{activity.notes && (
+                                                <p className="text-sm text-muted-foreground mt-2 line-clamp-2 whitespace-pre-line">
+                                                  {activity.notes}
+                                                </p>
+                                              )}
                             </div>
                           </div>
                           

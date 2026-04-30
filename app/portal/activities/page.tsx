@@ -128,7 +128,7 @@ export default async function PortalActivitiesPage() {
                       <CardContent className="space-y-3">
                         {/* Description */}
                         {activity.guest_description && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground whitespace-pre-line">
                             {activity.guest_description}
                           </p>
                         )}
@@ -161,7 +161,7 @@ export default async function PortalActivitiesPage() {
                             <Backpack className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                             <div>
                               <span className="font-medium text-foreground">What to bring: </span>
-                              <span className="text-muted-foreground">{activity.what_to_bring}</span>
+                              <span className="text-muted-foreground whitespace-pre-line">{activity.what_to_bring}</span>
                             </div>
                           </div>
                         )}
@@ -172,7 +172,7 @@ export default async function PortalActivitiesPage() {
                             <AlertTriangle className="h-4 w-4 text-secondary mt-0.5 flex-shrink-0" />
                             <div>
                               <span className="font-medium text-foreground">Note: </span>
-                              <span className="text-muted-foreground">{activity.safety_note}</span>
+                              <span className="text-muted-foreground whitespace-pre-line">{activity.safety_note}</span>
                             </div>
                           </div>
                         )}
