@@ -2222,3 +2222,16 @@ export async function getMealsWithPrepDateInRange(
   if (error) throw error
   return data || []
 }
+
+// Guidelines queries
+export async function getActiveGuidelines(): Promise<import('@/lib/types').Guideline[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('paz_guidelines')
+    .select('*')
+    .eq('is_active', true)
+    .order('display_order')
+  
+  if (error) throw error
+  return data || []
+}

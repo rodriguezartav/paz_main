@@ -1,40 +1,25 @@
+import { getActiveGuidelines } from '@/lib/db/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BookOpen, Volume2, Leaf, Users, Utensils, Droplets, Sun, Moon } from 'lucide-react'
+import { BookOpen, Volume2, Leaf, Users, Utensils, Droplets, Sun, Waves, TreePine, Heart, Home, Recycle, BedDouble, ShowerHead } from 'lucide-react'
+import type { Guideline } from '@/lib/types'
 
-const guidelines = [
-  {
-    icon: Volume2,
-    title: 'Quiet Hours',
-    description: 'Quiet hours are from 9:00 PM to 7:00 AM. Please be mindful of others resting and keep noise to a minimum during these times.',
-  },
-  {
-    icon: Utensils,
-    title: 'Meal Times',
-    description: 'Brunch is served at 10:00 AM and dinner at 6:00 PM. Please arrive on time. If you will miss a meal, let the kitchen know in advance.',
-  },
-  {
-    icon: Droplets,
-    title: 'Water Conservation',
-    description: 'We are off-grid and water is precious. Please take short showers and report any leaks immediately.',
-  },
-  {
-    icon: Leaf,
-    title: 'Substance-Free',
-    description: 'Paz is a substance-free environment. No alcohol, tobacco, or recreational drugs are permitted on the property.',
-  },
-  {
-    icon: Users,
-    title: 'Community Participation',
-    description: 'We ask all residents to contribute 1-2 hours daily to community tasks. This could be kitchen help, cleaning, or garden work.',
-  },
-  {
-    icon: Sun,
-    title: 'Digital Detox',
-    description: 'We encourage minimal screen time. Please keep phone usage to designated areas and avoid screens during meals.',
-  },
-]
+// Map categories to icons
+const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  shared_spaces: Volume2,
+  kitchen: Utensils,
+  waste: Recycle,
+  rooms: BedDouble,
+  laundry: ShowerHead,
+  off_grid: Sun,
+  ocean: Waves,
+  jungle: TreePine,
+  safety: Heart,
+  participation: Users,
+}
 
-export default function PortalGuidelinesPage() {
+export default async function PortalGuidelinesPage() {
+  const guidelines = await getActiveGuidelines()
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -66,65 +51,37 @@ export default function PortalGuidelinesPage() {
         </CardContent>
       </Card>
 
-      {/* Guidelines Grid */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Guidelines from Database */}
+      <div className="space-y-4">
         {guidelines.map((guideline) => {
-          const Icon = guideline.icon
+          const Icon = categoryIcons[guideline.category || ''] || Leaf
           return (
-            <Card key={guideline.title} className="border-border">
+            <Card key={guideline.id} className="border-border">
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Icon className="h-5 w-5 text-primary" />
                   {guideline.title}
                 </CardTitle>
+                {guideline.description && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {guideline.description}
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {guideline.description}
-                </p>
+                <ul className="space-y-2">
+                  {guideline.items.map((item, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm text-foreground">
+                      <span className="text-primary mt-1">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
             </Card>
           )
         })}
       </div>
-
-      {/* Daily Rhythm */}
-      <Card className="border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Moon className="h-5 w-5 text-primary" />
-            Daily Rhythm
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between py-2 border-b border-border">
-              <span className="text-muted-foreground">Wake up / Sunrise</span>
-              <span className="font-medium text-foreground">~5:30 AM</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border">
-              <span className="text-muted-foreground">Morning movement (optional)</span>
-              <span className="font-medium text-foreground">7:00 AM</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border">
-              <span className="text-muted-foreground">Brunch</span>
-              <span className="font-medium text-foreground">10:00 AM</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border">
-              <span className="text-muted-foreground">Dinner</span>
-              <span className="font-medium text-foreground">6:00 PM</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border">
-              <span className="text-muted-foreground">Quiet hours begin</span>
-              <span className="font-medium text-foreground">9:00 PM</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="text-muted-foreground">Lights out</span>
-              <span className="font-medium text-foreground">~9:30 PM</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Contact */}
       <Card className="border-border">

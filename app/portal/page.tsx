@@ -1,6 +1,6 @@
 import { getPublicActivitiesForNextDays, getMealsWithPrepDateInRange } from '@/lib/db/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { UtensilsCrossed, CalendarCheck, Sun, Leaf, Users } from 'lucide-react'
+import { UtensilsCrossed, CalendarCheck, Sun, Leaf, Users, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 
 // Costa Rica timezone (GMT-6)
@@ -198,6 +198,31 @@ export default async function PortalPage() {
               )}
               <p className="text-xs text-primary mt-4">
                 View all activities &rarr;
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* House Guidelines */}
+        <Link href="/portal/guidelines">
+          <Card className="h-full hover:shadow-md transition-shadow cursor-pointer border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <BookOpen className="h-5 w-5 text-primary" />
+                House Guidelines
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Simple guidelines to help us live well together in community.
+              </p>
+              <ul className="text-sm text-muted-foreground space-y-1 mb-4">
+                <li>• Shared spaces and kitchen</li>
+                <li>• Ocean and jungle safety</li>
+                <li>• Water and power conservation</li>
+              </ul>
+              <p className="text-xs text-primary">
+                Read guidelines &rarr;
               </p>
             </CardContent>
           </Card>
