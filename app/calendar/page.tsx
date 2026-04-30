@@ -7,18 +7,28 @@ export const metadata = {
   description: 'A simple view of what is happening in the next few days at Paz Corcovado.',
 }
 
+// Costa Rica timezone (GMT-6)
+const TIMEZONE = 'America/Costa_Rica'
+
+function getTodayStr(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: TIMEZONE })
+}
+
+function formatDateYMD(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 function groupActivitiesByPeriod(activities: ScheduledActivity[]) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const todayStr = getTodayStr()
+  const [year, month, day] = todayStr.split('-').map(Number)
+  const today = new Date(year, month - 1, day)
   
   const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  
-  const dayAfterTomorrow = new Date(today)
-  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2)
-  
-  const todayStr = today.toISOString().split('T')[0]
-  const tomorrowStr = tomorrow.toISOString().split('T')[0]
+  tomorrow.setDate(today.getDate() + 1)
+  const tomorrowStr = formatDateYMD(tomorrow)
   
   const todayActivities: ScheduledActivity[] = []
   const tomorrowActivities: ScheduledActivity[] = []

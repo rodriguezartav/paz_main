@@ -1,6 +1,6 @@
 import { getPublicActivitiesForNextDays, getMealsWithPrepDateInRange } from '@/lib/db/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { UtensilsCrossed, CalendarCheck, Sun, Leaf } from 'lucide-react'
+import { UtensilsCrossed, CalendarCheck, Sun, Leaf, Users } from 'lucide-react'
 import Link from 'next/link'
 
 // Costa Rica timezone (GMT-6)
@@ -106,14 +106,32 @@ export default async function PortalPage() {
                 const dayMeals = mealsByDate.get(date)
                 const hasMeals = dayMeals?.brunch || dayMeals?.dinner
                 
+                // Get headcount from brunch or dinner (they should be the same per day)
+                const meal = dayMeals?.brunch || dayMeals?.dinner
+                const eatsAll = meal?.headcount_eats_all || 0
+                const vegetarian = meal?.headcount_vegetarian || 0
+                const vegan = meal?.headcount_vegan || 0
+                const total = eatsAll + vegetarian + vegan
+                
                 return (
                   <div 
                     key={date} 
                     className={`rounded-lg p-3 ${isToday ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-muted/30'}`}
                   >
-                    <p className={`text-sm font-medium mb-2 ${isToday ? 'text-primary' : 'text-foreground'}`}>
-                      {formatDayLabel(date, isToday, todayStr)}
-                    </p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className={`text-sm font-medium ${isToday ? 'text-primary' : 'text-foreground'}`}>
+                        {formatDayLabel(date, isToday, todayStr)}
+                      </p>
+                      {total > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Users className="h-3 w-3" />
+                          <span>{total}</span>
+                          <span className="text-muted-foreground/60">
+                            ({eatsAll} all{vegetarian > 0 && `, ${vegetarian} veg`}{vegan > 0 && `, ${vegan} vegan`})
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     {hasMeals ? (
                       <div className="grid gap-2 md:grid-cols-2">
                         {/* Brunch */}
