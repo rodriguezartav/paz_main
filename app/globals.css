@@ -112,6 +112,15 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Apply Polymath Display to card titles, buttons, and sidebar */
+  [data-slot="card-title"],
+  [data-slot="button"],
+  aside nav a,
+  aside nav button,
+  aside nav span {
+    font-family: var(--font-polymath-display), sans-serif;
+  }
 }
 
 @layer utilities {
