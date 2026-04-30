@@ -3,6 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UtensilsCrossed, CalendarCheck, Sun, Leaf } from 'lucide-react'
 import Link from 'next/link'
 
+// Costa Rica timezone (GMT-6)
+const TIMEZONE = 'America/Costa_Rica'
+
+function getTodayInTimezone(): Date {
+  // Get current date string in Costa Rica timezone
+  const dateStr = new Date().toLocaleDateString('en-CA', { timeZone: TIMEZONE })
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
 
 function formatDateYMD(date: Date): string {
   const y = date.getFullYear()
@@ -11,17 +20,22 @@ function formatDateYMD(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
-function formatDayLabel(date: Date, isToday: boolean): string {
+function formatDayLabel(dateStr: string, isToday: boolean, todayStr: string): string {
   if (isToday) return 'Today'
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  if (formatDateYMD(date) === formatDateYMD(tomorrow)) return 'Tomorrow'
+  const today = getTodayInTimezone()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(today.getDate() + 1)
+  if (dateStr === formatDateYMD(tomorrow)) return 'Tomorrow'
+  // Parse the date string to display
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
 export default async function PortalPage() {
-  const today = new Date()
-  const startDate = formatDateYMD(today)
+  const today = getTodayInTimezone()
+  const todayStr = formatDateYMD(today)
+  const startDate = todayStr
   const endDateObj = new Date(today)
   endDateObj.setDate(today.getDate() + 2) // Next 3 days (today + 2)
   const endDate = formatDateYMD(endDateObj)
@@ -44,13 +58,12 @@ export default async function PortalPage() {
   }
 
   // Generate next 3 days
-  const next3Days: { date: string; dateObj: Date; isToday: boolean }[] = []
+  const next3Days: { date: string; isToday: boolean }[] = []
   for (let i = 0; i < 3; i++) {
     const d = new Date(today)
     d.setDate(today.getDate() + i)
     next3Days.push({
       date: formatDateYMD(d),
-      dateObj: d,
       isToday: i === 0
     })
   }
@@ -89,7 +102,7 @@ export default async function PortalPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {next3Days.map(({ date, dateObj, isToday }) => {
+              {next3Days.map(({ date, isToday }) => {
                 const dayMeals = mealsByDate.get(date)
                 const hasMeals = dayMeals?.brunch || dayMeals?.dinner
                 
@@ -99,7 +112,7 @@ export default async function PortalPage() {
                     className={`rounded-lg p-3 ${isToday ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-muted/30'}`}
                   >
                     <p className={`text-sm font-medium mb-2 ${isToday ? 'text-primary' : 'text-foreground'}`}>
-                      {formatDayLabel(dateObj, isToday)}
+                      {formatDayLabel(date, isToday, todayStr)}
                     </p>
                     {hasMeals ? (
                       <div className="grid gap-2 md:grid-cols-2">
@@ -143,8 +156,9 @@ export default async function PortalPage() {
               {upcomingActivities.length > 0 ? (
                 <div className="space-y-3">
                   {upcomingActivities.map((activity) => {
-                    const activityDate = new Date(activity.date + 'T00:00:00')
-                    const isToday = activityDate.toDateString() === new Date().toDateString()
+                    const isActivityToday = activity.date === todayStr
+                    const [year, month, day] = activity.date.split('-').map(Number)
+                    const activityDate = new Date(year, month - 1, day)
                     
                     return (
                       <div key={activity.id} className="border-l-2 border-primary/30 pl-3">
@@ -152,7 +166,7 @@ export default async function PortalPage() {
                           {activity.title}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {isToday ? 'Today' : activityDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          {isActivityToday ? 'Today' : activityDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                           {activity.start_time && ` at ${activity.start_time.slice(0, 5)}`}
                         </p>
                       </div>
