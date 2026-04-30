@@ -59,8 +59,8 @@ export async function createResidentFromApplication(data: {
 }): Promise<Resident> {
   const supabase = await createClient()
   
-  // Set resident_since to today's date when creating from application
-  const today = new Date().toISOString().split('T')[0]
+  // Set resident_since to today's date in Costa Rica timezone when creating from application
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' })
   
   const { data: resident, error } = await supabase
     .from('residents')
@@ -1998,17 +1998,21 @@ export async function getScheduledActivities(): Promise<ScheduledActivity[]> {
 
 export async function getPublicActivitiesForNextDays(days: number = 7): Promise<ScheduledActivity[]> {
   const supabase = await createClient()
-  const today = new Date().toISOString().split('T')[0]
-  const endDate = new Date()
-  endDate.setDate(endDate.getDate() + days)
-  const endDateStr = endDate.toISOString().split('T')[0]
+  // Use Costa Rica timezone for date calculations
+  const TIMEZONE = 'America/Costa_Rica'
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: TIMEZONE })
+  const [year, month, day] = todayStr.split('-').map(Number)
+  const todayDate = new Date(year, month - 1, day)
+  const endDate = new Date(todayDate)
+  endDate.setDate(todayDate.getDate() + days)
+  const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
   
   const { data, error } = await supabase
     .from('scheduled_activities')
     .select('*')
     .eq('is_public', true)
     .in('status', ['planned', 'confirmed'])
-    .gte('date', today)
+    .gte('date', todayStr)
     .lte('date', endDateStr)
     .order('date', { ascending: true })
     .order('start_time', { ascending: true })

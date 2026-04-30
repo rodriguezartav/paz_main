@@ -6,11 +6,29 @@ export const metadata = {
   description: 'Overview of Paz Corcovado operations',
 }
 
+// Costa Rica timezone (GMT-6)
+const TIMEZONE = 'America/Costa_Rica'
+
+function getTodayInTimezone(): Date {
+  const dateStr = new Date().toLocaleDateString('en-CA', { timeZone: TIMEZONE })
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function formatDateYMD(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 export default async function DashboardPage() {
-  // Get date range for next 7 days
-  const today = new Date()
-  const startDate = today.toISOString().split('T')[0]
-  const endDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  // Get date range for next 7 days in Costa Rica timezone
+  const today = getTodayInTimezone()
+  const startDate = formatDateYMD(today)
+  const endDateObj = new Date(today)
+  endDateObj.setDate(today.getDate() + 7)
+  const endDate = formatDateYMD(endDateObj)
   
   const [residents, pendingApplications, roomData, recipes, mealPlans] = await Promise.all([
     getDashboardResidents(startDate, endDate),
