@@ -95,7 +95,7 @@ export function SidebarNav({ activeSection, onSectionChange }: SidebarNavProps) 
                   {/* Section Header */}
                   <div className="mb-2 flex items-center gap-2 px-3">
                     <SectionIcon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <span className="text-xs font-semibold font-display uppercase tracking-wider text-muted-foreground">
                       {section.title}
                     </span>
                   </div>
@@ -114,7 +114,7 @@ export function SidebarNav({ activeSection, onSectionChange }: SidebarNavProps) 
                             href={item.href}
                             onClick={() => onSectionChange(item.label.toLowerCase())}
                             className={cn(
-                              'flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors',
+                              'flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium font-display transition-colors',
                               isActive
                                 ? 'bg-primary text-primary-foreground'
                                 : 'text-foreground hover:bg-sidebar-accent'
@@ -137,7 +137,7 @@ export function SidebarNav({ activeSection, onSectionChange }: SidebarNavProps) 
         <div className="border-t border-border p-4 space-y-3">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"
+            className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium font-display text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"
           >
             <LogOut className="h-5 w-5" />
             Logout
