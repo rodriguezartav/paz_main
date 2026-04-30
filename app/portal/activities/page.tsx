@@ -4,12 +4,27 @@ import { CalendarCheck, MapPin, User, Clock, AlertTriangle, Backpack } from 'luc
 import { ActivityTypeBadge } from '@/components/activities/activity-type-badge'
 import type { ScheduledActivity } from '@/lib/types'
 
+// Costa Rica timezone (GMT-6)
+const TIMEZONE = 'America/Costa_Rica'
+
+function getTodayStr(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: TIMEZONE })
+}
+
+function getTomorrowStr(): string {
+  const todayStr = getTodayStr()
+  const [year, month, day] = todayStr.split('-').map(Number)
+  const today = new Date(year, month - 1, day)
+  today.setDate(today.getDate() + 1)
+  const y = today.getFullYear()
+  const m = String(today.getMonth() + 1).padStart(2, '0')
+  const d = String(today.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 function groupActivitiesByDate(activities: ScheduledActivity[]) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+  const todayStr = getTodayStr()
+  const tomorrowStr = getTomorrowStr()
 
   const groups: { label: string; activities: ScheduledActivity[] }[] = []
   const todayActivities: ScheduledActivity[] = []
@@ -17,12 +32,9 @@ function groupActivitiesByDate(activities: ScheduledActivity[]) {
   const laterActivities: ScheduledActivity[] = []
 
   for (const activity of activities) {
-    const activityDate = new Date(activity.date + 'T00:00:00')
-    activityDate.setHours(0, 0, 0, 0)
-
-    if (activityDate.getTime() === today.getTime()) {
+    if (activity.date === todayStr) {
       todayActivities.push(activity)
-    } else if (activityDate.getTime() === tomorrow.getTime()) {
+    } else if (activity.date === tomorrowStr) {
       tomorrowActivities.push(activity)
     } else {
       laterActivities.push(activity)

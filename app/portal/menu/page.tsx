@@ -3,12 +3,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UtensilsCrossed, ChefHat } from 'lucide-react'
 import type { DayOfWeek, MealType, WeeklyMealPlanMeal } from '@/lib/types'
 
+// Costa Rica timezone (GMT-6)
+const TIMEZONE = 'America/Costa_Rica'
+
+function getTodayInTimezone(): Date {
+  const dateStr = new Date().toLocaleDateString('en-CA', { timeZone: TIMEZONE })
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function formatDateYMD(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 function getWeekStartDate(): string {
-  const today = new Date()
+  const today = getTodayInTimezone()
   const day = today.getDay()
   const diff = today.getDate() - day + (day === 0 ? -6 : 1)
-  const monday = new Date(today.setDate(diff))
-  return monday.toISOString().split('T')[0]
+  const monday = new Date(today)
+  monday.setDate(diff)
+  return formatDateYMD(monday)
 }
 
 const dayOrder: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -31,7 +48,7 @@ export default async function PortalMenuPage() {
   const weekStart = getWeekStartDate()
   const mealPlan = await getWeeklyMealPlanByDate(weekStart)
 
-  const today = new Date()
+  const today = getTodayInTimezone()
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
   const todayName = dayNames[today.getDay()] as DayOfWeek
 

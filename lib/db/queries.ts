@@ -1428,8 +1428,11 @@ export async function getMealPlansForDateRange(startDate: string, endDate: strin
   
   // Get all meal plans where the week might overlap with our date range
   // A week starting up to 6 days before endDate could still overlap
-  const earliestWeekStart = new Date(startDate)
+  // Parse date directly to avoid timezone issues
+  const [year, month, day] = startDate.split('-').map(Number)
+  const earliestWeekStart = new Date(year, month - 1, day)
   earliestWeekStart.setDate(earliestWeekStart.getDate() - 6)
+  const earliestWeekStartStr = `${earliestWeekStart.getFullYear()}-${String(earliestWeekStart.getMonth() + 1).padStart(2, '0')}-${String(earliestWeekStart.getDate()).padStart(2, '0')}`
   
   const { data, error } = await supabase
     .from('weekly_meal_plans')
@@ -1444,7 +1447,7 @@ export async function getMealPlansForDateRange(startDate: string, endDate: strin
         )
       )
     `)
-    .gte('week_start_date', earliestWeekStart.toISOString().split('T')[0])
+    .gte('week_start_date', earliestWeekStartStr)
     .lte('week_start_date', endDate)
     .order('week_start_date', { ascending: true })
   
@@ -1541,12 +1544,14 @@ export async function getDietHeadcountForDate(date: string): Promise<DietHeadcou
 // Get diet headcounts for a week (returns map of date -> headcount)
 export async function getDietHeadcountsForWeek(weekStartDate: string): Promise<Map<string, DietHeadcount>> {
   const result = new Map<string, DietHeadcount>()
-  const startDate = new Date(weekStartDate)
+  // Parse date directly to avoid timezone issues
+  const [year, month, day] = weekStartDate.split('-').map(Number)
+  const startDate = new Date(year, month - 1, day)
   
   for (let i = 0; i < 7; i++) {
     const date = new Date(startDate)
     date.setDate(date.getDate() + i)
-    const dateStr = date.toISOString().split('T')[0]
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     const headcount = await getDietHeadcountForDate(dateStr)
     result.set(dateStr, headcount)
   }
@@ -1749,12 +1754,14 @@ export async function refreshMealPlanHeadcounts(planId: string): Promise<void> {
   
   // Update each meal
   const days: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-  const startDate = new Date(plan.week_start_date)
+  // Parse date directly to avoid timezone issues
+  const [year, month, day] = plan.week_start_date.split('-').map(Number)
+  const startDate = new Date(year, month - 1, day)
   
   for (let i = 0; i < 7; i++) {
     const date = new Date(startDate)
     date.setDate(date.getDate() + i)
-    const dateStr = date.toISOString().split('T')[0]
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     const headcount = headcounts.get(dateStr) || { eats_all: 0, vegetarian: 0, vegan: 0, total: 0 }
     
     // Update both brunch and dinner for this day
