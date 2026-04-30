@@ -34,7 +34,7 @@ export function PublicActivityCard({ activity }: PublicActivityCardProps) {
       
       {/* Description */}
       {activity.guest_description && (
-        <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
+        <p className="mb-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
           {activity.guest_description}
         </p>
       )}
@@ -85,7 +85,7 @@ export function PublicActivityCard({ activity }: PublicActivityCardProps) {
           <Backpack className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
           <div>
             <span className="font-medium text-foreground">Bring: </span>
-            <span className="text-muted-foreground">{activity.what_to_bring}</span>
+            <span className="text-muted-foreground whitespace-pre-line">{activity.what_to_bring}</span>
           </div>
         </div>
       )}
@@ -96,7 +96,7 @@ export function PublicActivityCard({ activity }: PublicActivityCardProps) {
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
           <div>
             <span className="font-medium text-amber-800">Note: </span>
-            <span className="text-amber-700">{activity.safety_note}</span>
+            <span className="text-amber-700 whitespace-pre-line">{activity.safety_note}</span>
           </div>
         </div>
       )}
