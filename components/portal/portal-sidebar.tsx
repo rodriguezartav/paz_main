@@ -33,15 +33,7 @@ export function PortalSidebar() {
           </Link>
         </div>
 
-        {/* Welcome Message */}
-        <div className="border-b border-border px-6 py-4">
-          <p className="text-sm text-muted-foreground">
-            Welcome to Paz
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Your resident portal
-          </p>
-        </div>
+       
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-4">
