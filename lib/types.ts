@@ -402,6 +402,19 @@ export interface ShoppingListResult {
   generated_at: string
 }
 
+// Guidelines Types
+export interface Guideline {
+  id: number
+  title: string
+  description: string | null
+  items: string[]
+  display_order: number
+  is_active: boolean
+  category: string | null
+  created_at: string
+  updated_at: string
+}
+
 // Resident Price Modifier Types
 export type AdjustmentType = 'percentage' | 'fixed_amount'
 
