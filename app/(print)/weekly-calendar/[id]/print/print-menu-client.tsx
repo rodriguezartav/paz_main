@@ -110,6 +110,13 @@ export function PrintMenuClient({ plan }: PrintMenuClientProps) {
                         {brunchMeal && (
                           <span className="text-xs text-gray-500 ml-auto">
                             {brunchMeal.headcount_eats_all + brunchMeal.headcount_vegetarian + brunchMeal.headcount_vegan}p
+                            {(brunchMeal.headcount_vegetarian > 0 || brunchMeal.headcount_vegan > 0) && (
+                              <span className="ml-1">
+                                ({brunchMeal.headcount_vegetarian > 0 && `${brunchMeal.headcount_vegetarian}V`}
+                                {brunchMeal.headcount_vegetarian > 0 && brunchMeal.headcount_vegan > 0 && ', '}
+                                {brunchMeal.headcount_vegan > 0 && `${brunchMeal.headcount_vegan}VG`})
+                              </span>
+                            )}
                           </span>
                         )}
                       </div>
@@ -162,6 +169,13 @@ export function PrintMenuClient({ plan }: PrintMenuClientProps) {
                         {dinnerMeal && (
                           <span className="text-xs text-gray-500 ml-auto">
                             {dinnerMeal.headcount_eats_all + dinnerMeal.headcount_vegetarian + dinnerMeal.headcount_vegan}p
+                            {(dinnerMeal.headcount_vegetarian > 0 || dinnerMeal.headcount_vegan > 0) && (
+                              <span className="ml-1">
+                                ({dinnerMeal.headcount_vegetarian > 0 && `${dinnerMeal.headcount_vegetarian}V`}
+                                {dinnerMeal.headcount_vegetarian > 0 && dinnerMeal.headcount_vegan > 0 && ', '}
+                                {dinnerMeal.headcount_vegan > 0 && `${dinnerMeal.headcount_vegan}VG`})
+                              </span>
+                            )}
                           </span>
                         )}
                       </div>
