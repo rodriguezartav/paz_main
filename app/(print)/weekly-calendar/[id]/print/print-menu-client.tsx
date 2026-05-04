@@ -114,7 +114,7 @@ export function PrintMenuClient({ plan }: PrintMenuClientProps) {
                         )}
                       </div>
                       
-                      <div className="space-y-2 ml-6">
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                         {brunchRecipes.map((recipeAssignment) => (
                           <div 
                             key={recipeAssignment.id}
@@ -166,7 +166,7 @@ export function PrintMenuClient({ plan }: PrintMenuClientProps) {
                         )}
                       </div>
                       
-                      <div className="space-y-2 ml-6">
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                         {dinnerRecipes.map((recipeAssignment) => (
                           <div 
                             key={recipeAssignment.id}
