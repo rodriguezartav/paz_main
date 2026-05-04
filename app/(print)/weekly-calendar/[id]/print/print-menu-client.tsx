@@ -65,14 +65,22 @@ export function PrintMenuClient({ plan }: PrintMenuClientProps) {
       {/* Printable Content */}
       <div className="max-w-[1000px] mx-auto px-8 py-10 print:px-4 print:py-4 print:max-w-none">
         {/* Header */}
-        <header className="text-center mb-8 pb-4 border-b-2 border-gray-300">
-          <h1 className="text-2xl font-bold tracking-tight mb-1">Paz Kitchen Menu</h1>
-          <p className="text-lg text-gray-600">
-            {formatWeekRange(plan.week_start_date)}
-          </p>
-          {plan.template && (
-            <p className="text-sm text-gray-500 mt-1">Template: {plan.template.name}</p>
-          )}
+        <header className="flex items-center justify-center gap-6 mb-8 pb-4 border-b-2 border-gray-300">
+          {/* QR Code */}
+          <img 
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/static-qr-code-c7f8eca5609b48965aa23516a65c4e1b-onkN7YKw1kRRQtzqkMogcKMa53n3DY.png"
+            alt="QR Code"
+            className="w-16 h-16 print:w-14 print:h-14"
+          />
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight mb-1">Paz Kitchen Menu</h1>
+            <p className="text-lg text-gray-600">
+              {formatWeekRange(plan.week_start_date)}
+            </p>
+            {plan.template && (
+              <p className="text-sm text-gray-500 mt-1">Template: {plan.template.name}</p>
+            )}
+          </div>
         </header>
 
         {/* Menu Days - 2 Column Grid */}
