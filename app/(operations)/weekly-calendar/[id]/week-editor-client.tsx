@@ -27,8 +27,7 @@ import {
   ChefHat,
   Leaf,
   Drumstick,
-  Printer,
-  Square
+  Printer
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { WeeklyMealPlan, WeeklyMealPlanMeal, Recipe, DayOfWeek, MealType, RecipeRole, ServingTarget } from '@/lib/types'
@@ -112,8 +111,7 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
   const [headcountVegetarian, setHeadcountVegetarian] = useState(0)
   const [headcountVegan, setHeadcountVegan] = useState(0)
   
-  // Print dialog
-  const [showPrintDialog, setShowPrintDialog] = useState(false)
+  
 
   // Get meal for a specific day and type
   const getMeal = (dayOfWeek: DayOfWeek, mealType: MealType): WeeklyMealPlanMeal | undefined => {
@@ -258,7 +256,10 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setShowPrintDialog(true)}>
+          <Button 
+            variant="outline" 
+            onClick={() => window.open(`/weekly-calendar/${plan.id}/print`, '_blank')}
+          >
             <Printer className="mr-2 h-4 w-4" />
             Print Menu
           </Button>
@@ -533,181 +534,6 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
         </DialogContent>
       </Dialog>
 
-      {/* Print Menu Dialog */}
-      <Dialog open={showPrintDialog} onOpenChange={setShowPrintDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:overflow-visible">
-          <DialogHeader className="print:hidden">
-            <DialogTitle>Weekly Menu - Print View</DialogTitle>
-            <DialogDescription>
-              Review the menu and click Print to create a physical copy for the kitchen
-            </DialogDescription>
-          </DialogHeader>
-          
-          {/* Printable Content */}
-          <div className="print-content space-y-6 py-4">
-            {/* Print Header */}
-            <div className="text-center border-b pb-4">
-              <h1 className="text-2xl font-bold">Paz Kitchen Menu</h1>
-              <p className="text-lg text-muted-foreground">
-                Week of {formatWeekRange(plan.week_start_date)}
-              </p>
-              {plan.template && (
-                <p className="text-sm text-muted-foreground">Template: {plan.template.name}</p>
-              )}
-            </div>
-
-            {/* Menu Grid */}
-            <div className="space-y-6">
-              {DAYS_OF_WEEK.map((day, dayIndex) => {
-                const brunchMeal = getMeal(day.key, 'brunch')
-                const dinnerMeal = getMeal(day.key, 'dinner')
-                
-                // Skip days with no recipes
-                const brunchRecipes = brunchMeal?.recipes || []
-                const dinnerRecipes = dinnerMeal?.recipes || []
-                if (brunchRecipes.length === 0 && dinnerRecipes.length === 0) return null
-                
-                return (
-                  <div key={day.key} className="border rounded-lg overflow-hidden break-inside-avoid">
-                    {/* Day Header */}
-                    <div className="bg-muted px-4 py-2 border-b">
-                      <div className="flex items-center justify-between">
-                        <h2 className="font-bold text-lg">
-                          {day.label}, {getDateForDay(plan.week_start_date, dayIndex)}
-                        </h2>
-                      </div>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 divide-x">
-                      {/* Brunch */}
-                      <div className="p-4">
-                        <div className="flex items-center gap-2 mb-3 pb-2 border-b">
-                          <Sun className="h-5 w-5 text-amber-500" />
-                          <h3 className="font-semibold">Brunch</h3>
-                          {brunchMeal && (
-                            <span className="text-sm text-muted-foreground ml-auto">
-                              {brunchMeal.headcount_eats_all + brunchMeal.headcount_vegetarian + brunchMeal.headcount_vegan} people
-                              <span className="text-xs ml-1">
-                                ({brunchMeal.headcount_eats_all}A / {brunchMeal.headcount_vegetarian}V / {brunchMeal.headcount_vegan}VG)
-                              </span>
-                            </span>
-                          )}
-                        </div>
-                        
-                        {brunchRecipes.length > 0 ? (
-                          <div className="space-y-2">
-                            {brunchRecipes.map((recipeAssignment) => (
-                              <div 
-                                key={recipeAssignment.id}
-                                className="flex items-start gap-3 py-2 border-b border-dashed last:border-0"
-                              >
-                                {/* Checkbox for cook */}
-                                <div className="flex-shrink-0 mt-0.5">
-                                  <Square className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                                <div className="flex-1">
-                                  <p className="font-medium">
-                                    {recipeAssignment.recipe?.name}
-                                  </p>
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <span className="capitalize">{recipeAssignment.recipe_role.replace(/_/g, ' ')}</span>
-                                    {recipeAssignment.serving_target !== 'everyone' && (
-                                      <Badge variant="outline" className="text-xs">
-                                        {recipeAssignment.serving_target.replace(/_/g, ' ')}
-                                      </Badge>
-                                    )}
-                                    {recipeAssignment.recipe?.suitable_for_vegan && (
-                                      <Badge className="text-xs bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Vegan</Badge>
-                                    )}
-                                    {recipeAssignment.recipe?.suitable_for_vegetarian && !recipeAssignment.recipe?.suitable_for_vegan && (
-                                      <Badge className="text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-100">Vegetarian</Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground italic">No recipes planned</p>
-                        )}
-                      </div>
-                      
-                      {/* Dinner */}
-                      <div className="p-4">
-                        <div className="flex items-center gap-2 mb-3 pb-2 border-b">
-                          <Moon className="h-5 w-5 text-indigo-500" />
-                          <h3 className="font-semibold">Dinner</h3>
-                          {dinnerMeal && (
-                            <span className="text-sm text-muted-foreground ml-auto">
-                              {dinnerMeal.headcount_eats_all + dinnerMeal.headcount_vegetarian + dinnerMeal.headcount_vegan} people
-                              <span className="text-xs ml-1">
-                                ({dinnerMeal.headcount_eats_all}A / {dinnerMeal.headcount_vegetarian}V / {dinnerMeal.headcount_vegan}VG)
-                              </span>
-                            </span>
-                          )}
-                        </div>
-                        
-                        {dinnerRecipes.length > 0 ? (
-                          <div className="space-y-2">
-                            {dinnerRecipes.map((recipeAssignment) => (
-                              <div 
-                                key={recipeAssignment.id}
-                                className="flex items-start gap-3 py-2 border-b border-dashed last:border-0"
-                              >
-                                {/* Checkbox for cook */}
-                                <div className="flex-shrink-0 mt-0.5">
-                                  <Square className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                                <div className="flex-1">
-                                  <p className="font-medium">
-                                    {recipeAssignment.recipe?.name}
-                                  </p>
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <span className="capitalize">{recipeAssignment.recipe_role.replace(/_/g, ' ')}</span>
-                                    {recipeAssignment.serving_target !== 'everyone' && (
-                                      <Badge variant="outline" className="text-xs">
-                                        {recipeAssignment.serving_target.replace(/_/g, ' ')}
-                                      </Badge>
-                                    )}
-                                    {recipeAssignment.recipe?.suitable_for_vegan && (
-                                      <Badge className="text-xs bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Vegan</Badge>
-                                    )}
-                                    {recipeAssignment.recipe?.suitable_for_vegetarian && !recipeAssignment.recipe?.suitable_for_vegan && (
-                                      <Badge className="text-xs bg-yellow-100 text-yellow-700 hover:bg-yellow-100">Vegetarian</Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground italic">No recipes planned</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Footer with notes section */}
-            <div className="border-t pt-4 mt-6">
-              <p className="text-sm text-muted-foreground mb-2">Notes:</p>
-              <div className="border border-dashed rounded min-h-[80px]"></div>
-            </div>
-          </div>
-          
-          <DialogFooter className="print:hidden">
-            <Button variant="outline" onClick={() => setShowPrintDialog(false)}>
-              Close
-            </Button>
-            <Button onClick={() => window.print()}>
-              <Printer className="mr-2 h-4 w-4" />
-              Print
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+      </div>
   )
 }
