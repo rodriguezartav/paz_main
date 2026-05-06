@@ -33,7 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { ScheduledActivity, ActivityType, ActivityStatus } from '@/lib/types'
+import type { ScheduledActivity, ActivityType, ActivityStatus, ActivityTemplate } from '@/lib/types'
+import { ImageUpload } from '@/components/ui/image-upload'
 import { 
   Calendar,
   Plus, 
@@ -52,7 +53,9 @@ import {
   Music,
   Wrench,
   HandHeart,
-  MoreHorizontal
+  MoreHorizontal,
+  LayoutTemplate,
+  ImageIcon
 } from 'lucide-react'
 import {
   createActivityAction,
@@ -80,6 +83,7 @@ const statusConfig: Record<ActivityStatus, { label: string; color: string }> = {
 
 interface ActivitiesPageClientProps {
   initialActivities: ScheduledActivity[]
+  templates: ActivityTemplate[]
 }
 
 const defaultForm = {
@@ -98,9 +102,11 @@ const defaultForm = {
   what_to_bring: '',
   safety_note: '',
   signup_enabled: false,
+  image_url: null as string | null,
+  template_id: null as string | null,
 }
 
-export function ActivitiesPageClient({ initialActivities }: ActivitiesPageClientProps) {
+export function ActivitiesPageClient({ initialActivities, templates }: ActivitiesPageClientProps) {
   const router = useRouter()
   const [activities, setActivities] = useState<ScheduledActivity[]>(initialActivities)
   
@@ -109,6 +115,9 @@ export function ActivitiesPageClient({ initialActivities }: ActivitiesPageClient
   const [editingActivity, setEditingActivity] = useState<ScheduledActivity | null>(null)
   const [form, setForm] = useState(defaultForm)
   
+  // Template selection dialog
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
+  
   // Delete confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null)
   
@@ -116,6 +125,32 @@ export function ActivitiesPageClient({ initialActivities }: ActivitiesPageClient
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<ActivityStatus | 'all'>('all')
+  
+  const openTemplateSelector = () => {
+    setTemplateDialogOpen(true)
+  }
+  
+  const createFromTemplate = (template: ActivityTemplate) => {
+    setTemplateDialogOpen(false)
+    setEditingActivity(null)
+    setForm({
+      ...defaultForm,
+      title: template.title,
+      activity_type: template.activity_type,
+      start_time: template.default_start_time || '',
+      end_time: template.default_end_time || '',
+      location: template.default_location || '',
+      facilitator_name: template.default_facilitator_name || '',
+      capacity: template.default_capacity?.toString() || '',
+      is_public: template.is_public,
+      guest_description: template.guest_description || '',
+      what_to_bring: template.what_to_bring || '',
+      safety_note: template.safety_note || '',
+      image_url: template.image_url,
+      template_id: template.id,
+    })
+    setDialogOpen(true)
+  }
 
   const openAddActivity = () => {
     setEditingActivity(null)
@@ -141,6 +176,8 @@ export function ActivitiesPageClient({ initialActivities }: ActivitiesPageClient
       what_to_bring: activity.what_to_bring || '',
       safety_note: activity.safety_note || '',
       signup_enabled: activity.signup_enabled,
+      image_url: activity.image_url,
+      template_id: activity.template_id,
     })
     setDialogOpen(true)
   }
@@ -165,6 +202,8 @@ export function ActivitiesPageClient({ initialActivities }: ActivitiesPageClient
       what_to_bring: form.what_to_bring || null,
       safety_note: form.safety_note || null,
       signup_enabled: form.signup_enabled,
+      image_url: form.image_url,
+      template_id: form.template_id,
     }
     
     try {
@@ -261,6 +300,12 @@ export function ActivitiesPageClient({ initialActivities }: ActivitiesPageClient
               <SelectItem value="completed">Completed</SelectItem>
             </SelectContent>
           </Select>
+          {templates.length > 0 && (
+            <Button variant="outline" onClick={openTemplateSelector}>
+              <LayoutTemplate className="mr-2 h-4 w-4" />
+              From Template
+            </Button>
+          )}
           <Button onClick={openAddActivity}>
             <Plus className="mr-2 h-4 w-4" />
             Add Activity
@@ -391,6 +436,17 @@ export function ActivitiesPageClient({ initialActivities }: ActivitiesPageClient
             <DialogTitle>{editingActivity ? 'Edit Activity' : 'Add Activity'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label>Activity Image</Label>
+              <ImageUpload
+                value={form.image_url}
+                onChange={(url) => setForm(prev => ({ ...prev, image_url: url }))}
+                folder="activities"
+                disabled={isSubmitting}
+              />
+            </div>
+
             {/* Basic Info */}
             <div className="space-y-4">
               <div className="space-y-2">
@@ -614,6 +670,68 @@ export function ActivitiesPageClient({ initialActivities }: ActivitiesPageClient
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Template Selector Dialog */}
+      <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Choose a Template</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4 sm:grid-cols-2">
+            {templates.map(template => {
+              const typeConfig = activityTypeConfig[template.activity_type]
+              const TypeIcon = typeConfig.icon
+              
+              return (
+                <Card 
+                  key={template.id} 
+                  className="cursor-pointer hover:border-primary transition-colors"
+                  onClick={() => createFromTemplate(template)}
+                >
+                  {template.image_url ? (
+                    <div className="relative h-32 bg-muted">
+                      <img
+                        src={template.image_url}
+                        alt={template.title}
+                        className="w-full h-full object-cover rounded-t-lg"
+                      />
+                      <div className="absolute top-2 left-2">
+                        <Badge className={`${typeConfig.color}`}>
+                          <TypeIcon className="h-3 w-3 mr-1" />
+                          {typeConfig.label}
+                        </Badge>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-20 bg-muted flex items-center justify-center rounded-t-lg">
+                      <div className={`rounded-lg p-2 ${typeConfig.color}`}>
+                        <TypeIcon className="h-5 w-5" />
+                      </div>
+                    </div>
+                  )}
+                  <CardContent className="p-3">
+                    <h3 className="font-semibold text-sm">{template.title}</h3>
+                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted-foreground">
+                      {template.default_location && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {template.default_location}
+                        </span>
+                      )}
+                      {template.default_capacity && (
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {template.default_capacity}
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
