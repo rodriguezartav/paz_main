@@ -372,6 +372,28 @@ export interface ScheduledActivity {
   what_to_bring: string | null
   safety_note: string | null
   signup_enabled: boolean
+  image_url: string | null
+  template_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ActivityTemplate {
+  id: string
+  title: string
+  activity_type: ActivityType
+  default_start_time: string | null
+  default_end_time: string | null
+  default_location: string | null
+  default_facilitator_name: string | null
+  default_capacity: number | null
+  description: string | null
+  guest_description: string | null
+  what_to_bring: string | null
+  safety_note: string | null
+  image_url: string | null
+  is_public: boolean
+  is_active: boolean
   created_at: string
   updated_at: string
 }

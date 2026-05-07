@@ -26,7 +26,8 @@ import {
   RefreshCw,
   ChefHat,
   Leaf,
-  Drumstick
+  Drumstick,
+  Printer
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { WeeklyMealPlan, WeeklyMealPlanMeal, Recipe, DayOfWeek, MealType, RecipeRole, ServingTarget } from '@/lib/types'
@@ -109,6 +110,8 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
   const [headcountEatsAll, setHeadcountEatsAll] = useState(0)
   const [headcountVegetarian, setHeadcountVegetarian] = useState(0)
   const [headcountVegan, setHeadcountVegan] = useState(0)
+  
+  
 
   // Get meal for a specific day and type
   const getMeal = (dayOfWeek: DayOfWeek, mealType: MealType): WeeklyMealPlanMeal | undefined => {
@@ -252,10 +255,19 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
             )}
           </div>
         </div>
-        <Button variant="outline" onClick={refreshAllHeadcounts} disabled={isPending}>
-          <RefreshCw className={cn("mr-2 h-4 w-4", isPending && "animate-spin")} />
-          Refresh Headcounts
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => window.open(`/weekly-calendar/${plan.id}/print`, '_blank')}
+          >
+            <Printer className="mr-2 h-4 w-4" />
+            Print Menu
+          </Button>
+          <Button variant="outline" onClick={refreshAllHeadcounts} disabled={isPending}>
+            <RefreshCw className={cn("mr-2 h-4 w-4", isPending && "animate-spin")} />
+            Refresh Headcounts
+          </Button>
+        </div>
       </div>
 
       {/* Week Grid */}
@@ -521,6 +533,7 @@ export function WeekEditorClient({ plan: initialPlan, recipes }: WeekEditorClien
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+
+      </div>
   )
 }
