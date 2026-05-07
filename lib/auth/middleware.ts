@@ -22,6 +22,11 @@ function isPublicRoute(pathname: string): boolean {
 export async function authMiddleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   
+  // Allow all API routes to be public (for webhooks, external integrations, etc.)
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next()
+  }
+  
   // v0 preview environment doesn't support cookie persistence across client-side navigation
   // Only bypass auth in v0 preview (vusercontent.net domains)
   const host = request.headers.get('host') || ''
