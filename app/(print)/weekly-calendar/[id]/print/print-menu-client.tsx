@@ -83,8 +83,8 @@ export function PrintMenuClient({ plan }: PrintMenuClientProps) {
           </div>
         </header>
 
-        {/* Menu Days - 2 Column Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Menu Days - Vertical List with Horizontal Day Cards */}
+        <div className="space-y-3">
           {DAYS_OF_WEEK.map((day, dayIndex) => {
             const brunchMeal = getMeal(day.key, 'brunch')
             const dinnerMeal = getMeal(day.key, 'dinner')
@@ -97,21 +97,22 @@ export function PrintMenuClient({ plan }: PrintMenuClientProps) {
             
             return (
               <div key={day.key} className="break-inside-avoid border border-gray-300 rounded-lg overflow-hidden">
-                {/* Day Header */}
-                <div className="bg-gray-100 px-4 py-2 border-b border-gray-300">
-                  <h2 className="text-sm font-bold">
-                    {day.label}
-                  </h2>
-                  <p className="text-xs text-gray-500">
-                    {getDateForDay(plan.week_start_date, dayIndex).split(',').slice(1).join(',').trim()}
-                  </p>
-                </div>
-                
-                {/* Meals */}
-                <div className="divide-y divide-gray-200">
-                  {/* Brunch */}
-                  {brunchRecipes.length > 0 && (
-                    <div className="px-4 py-3">
+                {/* Horizontal layout: Day header on left, meals in 2-column grid */}
+                <div className="flex">
+                  {/* Day Header - Vertical on left side */}
+                  <div className="bg-gray-100 px-3 py-2 border-r border-gray-300 flex flex-col justify-center min-w-[90px]">
+                    <h2 className="text-sm font-bold">
+                      {day.label}
+                    </h2>
+                    <p className="text-xs text-gray-500">
+                      {getDateForDay(plan.week_start_date, dayIndex).split(',').slice(1).join(',').trim()}
+                    </p>
+                  </div>
+                  
+                  {/* Meals - 2 Column Grid: Brunch | Dinner */}
+                  <div className="flex-1 grid grid-cols-2 divide-x divide-gray-200">
+                    {/* Brunch Column */}
+                    <div className="px-3 py-2">
                       <div className="flex items-center gap-2 mb-2">
                         <Sun className="h-4 w-4 text-amber-500 print:text-gray-600" />
                         <h3 className="font-semibold text-sm">Brunch</h3>
@@ -129,48 +130,50 @@ export function PrintMenuClient({ plan }: PrintMenuClientProps) {
                         )}
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                        {brunchRecipes.map((recipeAssignment) => (
-                          <div 
-                            key={recipeAssignment.id}
-                            className="flex items-start gap-2"
-                          >
-                            {/* Checkbox */}
-                            <div className="flex-shrink-0 mt-0.5">
-                              <div className="w-4 h-4 border-2 border-gray-400 rounded" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm leading-tight">
-                                {recipeAssignment.recipe?.name}
-                              </p>
-                              <div className="flex items-center gap-1 flex-wrap text-xs text-gray-500">
-                                <span className="capitalize">{recipeAssignment.recipe_role.replace(/_/g, ' ')}</span>
-                                {recipeAssignment.serving_target !== 'everyone' && (
-                                  <Badge variant="outline" className="text-[10px] px-1 py-0 print:border-gray-400">
-                                    {recipeAssignment.serving_target.replace(/_/g, ' ')}
-                                  </Badge>
-                                )}
-                                {recipeAssignment.recipe?.suitable_for_vegan && (
-                                  <Badge className="text-[10px] px-1 py-0 bg-emerald-100 text-emerald-700 print:bg-gray-100 print:text-gray-700">
-                                    VG
-                                  </Badge>
-                                )}
-                                {recipeAssignment.recipe?.suitable_for_vegetarian && !recipeAssignment.recipe?.suitable_for_vegan && (
-                                  <Badge className="text-[10px] px-1 py-0 bg-yellow-100 text-yellow-700 print:bg-gray-100 print:text-gray-700">
-                                    V
-                                  </Badge>
-                                )}
+                      {brunchRecipes.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {brunchRecipes.map((recipeAssignment) => (
+                            <div 
+                              key={recipeAssignment.id}
+                              className="flex items-start gap-2"
+                            >
+                              {/* Checkbox */}
+                              <div className="flex-shrink-0 mt-0.5">
+                                <div className="w-4 h-4 border-2 border-gray-400 rounded" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm leading-tight">
+                                  {recipeAssignment.recipe?.name}
+                                </p>
+                                <div className="flex items-center gap-1 flex-wrap text-xs text-gray-500">
+                                  <span className="capitalize">{recipeAssignment.recipe_role.replace(/_/g, ' ')}</span>
+                                  {recipeAssignment.serving_target !== 'everyone' && (
+                                    <Badge variant="outline" className="text-[10px] px-1 py-0 print:border-gray-400">
+                                      {recipeAssignment.serving_target.replace(/_/g, ' ')}
+                                    </Badge>
+                                  )}
+                                  {recipeAssignment.recipe?.suitable_for_vegan && (
+                                    <Badge className="text-[10px] px-1 py-0 bg-emerald-100 text-emerald-700 print:bg-gray-100 print:text-gray-700">
+                                      VG
+                                    </Badge>
+                                  )}
+                                  {recipeAssignment.recipe?.suitable_for_vegetarian && !recipeAssignment.recipe?.suitable_for_vegan && (
+                                    <Badge className="text-[10px] px-1 py-0 bg-yellow-100 text-yellow-700 print:bg-gray-100 print:text-gray-700">
+                                      V
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 italic">No recipes</p>
+                      )}
                     </div>
-                  )}
-                  
-                  {/* Dinner */}
-                  {dinnerRecipes.length > 0 && (
-                    <div className="px-4 py-3">
+                    
+                    {/* Dinner Column */}
+                    <div className="px-3 py-2">
                       <div className="flex items-center gap-2 mb-2">
                         <Moon className="h-4 w-4 text-indigo-500 print:text-gray-600" />
                         <h3 className="font-semibold text-sm">Dinner</h3>
@@ -188,44 +191,48 @@ export function PrintMenuClient({ plan }: PrintMenuClientProps) {
                         )}
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                        {dinnerRecipes.map((recipeAssignment) => (
-                          <div 
-                            key={recipeAssignment.id}
-                            className="flex items-start gap-2"
-                          >
-                            {/* Checkbox */}
-                            <div className="flex-shrink-0 mt-0.5">
-                              <div className="w-4 h-4 border-2 border-gray-400 rounded" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm leading-tight">
-                                {recipeAssignment.recipe?.name}
-                              </p>
-                              <div className="flex items-center gap-1 flex-wrap text-xs text-gray-500">
-                                <span className="capitalize">{recipeAssignment.recipe_role.replace(/_/g, ' ')}</span>
-                                {recipeAssignment.serving_target !== 'everyone' && (
-                                  <Badge variant="outline" className="text-[10px] px-1 py-0 print:border-gray-400">
-                                    {recipeAssignment.serving_target.replace(/_/g, ' ')}
-                                  </Badge>
-                                )}
-                                {recipeAssignment.recipe?.suitable_for_vegan && (
-                                  <Badge className="text-[10px] px-1 py-0 bg-emerald-100 text-emerald-700 print:bg-gray-100 print:text-gray-700">
-                                    VG
-                                  </Badge>
-                                )}
-                                {recipeAssignment.recipe?.suitable_for_vegetarian && !recipeAssignment.recipe?.suitable_for_vegan && (
-                                  <Badge className="text-[10px] px-1 py-0 bg-yellow-100 text-yellow-700 print:bg-gray-100 print:text-gray-700">
-                                    V
-                                  </Badge>
-                                )}
+                      {dinnerRecipes.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {dinnerRecipes.map((recipeAssignment) => (
+                            <div 
+                              key={recipeAssignment.id}
+                              className="flex items-start gap-2"
+                            >
+                              {/* Checkbox */}
+                              <div className="flex-shrink-0 mt-0.5">
+                                <div className="w-4 h-4 border-2 border-gray-400 rounded" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm leading-tight">
+                                  {recipeAssignment.recipe?.name}
+                                </p>
+                                <div className="flex items-center gap-1 flex-wrap text-xs text-gray-500">
+                                  <span className="capitalize">{recipeAssignment.recipe_role.replace(/_/g, ' ')}</span>
+                                  {recipeAssignment.serving_target !== 'everyone' && (
+                                    <Badge variant="outline" className="text-[10px] px-1 py-0 print:border-gray-400">
+                                      {recipeAssignment.serving_target.replace(/_/g, ' ')}
+                                    </Badge>
+                                  )}
+                                  {recipeAssignment.recipe?.suitable_for_vegan && (
+                                    <Badge className="text-[10px] px-1 py-0 bg-emerald-100 text-emerald-700 print:bg-gray-100 print:text-gray-700">
+                                      VG
+                                    </Badge>
+                                  )}
+                                  {recipeAssignment.recipe?.suitable_for_vegetarian && !recipeAssignment.recipe?.suitable_for_vegan && (
+                                    <Badge className="text-[10px] px-1 py-0 bg-yellow-100 text-yellow-700 print:bg-gray-100 print:text-gray-700">
+                                      V
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 italic">No recipes</p>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )
