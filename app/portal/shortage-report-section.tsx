@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, Plus, X, Check, Loader2, ShoppingBasket, Trash2 } from 'lucide-react'
+import { AlertTriangle, Plus, Check, Loader2, ShoppingBasket, ChevronsUpDown } from 'lucide-react'
 import { 
   Dialog, 
   DialogContent, 
@@ -27,20 +27,56 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import type { IngredientShortageReport } from '@/lib/types'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
+import type { IngredientShortageReport, Ingredient } from '@/lib/types'
 import { reportShortageAction, resolveShortageAction, resolveAllShortagesAction } from './actions'
 
 interface ShortageReportSectionProps {
   reports: IngredientShortageReport[]
+  ingredients: Ingredient[]
   showAdminControls?: boolean
 }
 
-export function ShortageReportSection({ reports, showAdminControls = false }: ShortageReportSectionProps) {
+export function ShortageReportSection({ reports, ingredients, showAdminControls = false }: ShortageReportSectionProps) {
   const [isPending, startTransition] = useTransition()
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [itemName, setItemName] = useState('')
+  const [comboboxOpen, setComboboxOpen] = useState(false)
+  const [selectedIngredientId, setSelectedIngredientId] = useState<string | null>(null)
+  const [customItemName, setCustomItemName] = useState('')
   const [reportedBy, setReportedBy] = useState('')
   const [notes, setNotes] = useState('')
+
+  // Group ingredients by type for better organization
+  const groupedIngredients = useMemo(() => {
+    const groups: Record<string, Ingredient[]> = {}
+    ingredients.forEach(ing => {
+      if (!groups[ing.type]) {
+        groups[ing.type] = []
+      }
+      groups[ing.type].push(ing)
+    })
+    // Sort ingredients within each group alphabetically
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => a.name.localeCompare(b.name))
+    })
+    return groups
+  }, [ingredients])
+
+  const selectedIngredient = ingredients.find(i => i.id === selectedIngredientId)
+  const itemName = selectedIngredient?.name || customItemName
 
   const handleSubmit = () => {
     if (!itemName.trim()) return
@@ -53,7 +89,8 @@ export function ShortageReportSection({ reports, showAdminControls = false }: Sh
       })
       
       if (result.success) {
-        setItemName('')
+        setSelectedIngredientId(null)
+        setCustomItemName('')
         setReportedBy('')
         setNotes('')
         setDialogOpen(false)
@@ -71,6 +108,18 @@ export function ShortageReportSection({ reports, showAdminControls = false }: Sh
     startTransition(async () => {
       await resolveAllShortagesAction()
     })
+  }
+
+  const typeLabels: Record<string, string> = {
+    staple: 'Staples',
+    protein: 'Proteins',
+    vegetable: 'Vegetables',
+    fruit: 'Fruits',
+    condiment: 'Condiments',
+    dairy: 'Dairy',
+    cleaning: 'Cleaning',
+    roots: 'Roots',
+    other: 'Other',
   }
 
   return (
@@ -97,13 +146,78 @@ export function ShortageReportSection({ reports, showAdminControls = false }: Sh
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="item_name">What&apos;s running low? *</Label>
-                  <Input
-                    id="item_name"
-                    placeholder="e.g., Olive oil, Bananas, Dish soap..."
-                    value={itemName}
-                    onChange={(e) => setItemName(e.target.value)}
-                  />
+                  <Label>What&apos;s running low? *</Label>
+                  <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={comboboxOpen}
+                        className="w-full justify-between"
+                      >
+                        {selectedIngredient
+                          ? selectedIngredient.name
+                          : customItemName || "Select an ingredient..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search ingredients..." 
+                          onValueChange={(value) => {
+                            // Allow custom entry if typing something not in the list
+                            setCustomItemName(value)
+                          }}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            <div className="p-2 text-sm text-muted-foreground">
+                              No ingredient found. 
+                              <Button 
+                                variant="link" 
+                                className="p-0 h-auto text-primary"
+                                onClick={() => {
+                                  setSelectedIngredientId(null)
+                                  setComboboxOpen(false)
+                                }}
+                              >
+                                Use &quot;{customItemName}&quot; as custom item
+                              </Button>
+                            </div>
+                          </CommandEmpty>
+                          {Object.entries(groupedIngredients).map(([type, items]) => (
+                            <CommandGroup key={type} heading={typeLabels[type] || type}>
+                              {items.map((ingredient) => (
+                                <CommandItem
+                                  key={ingredient.id}
+                                  value={ingredient.name}
+                                  onSelect={() => {
+                                    setSelectedIngredientId(ingredient.id)
+                                    setCustomItemName('')
+                                    setComboboxOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      selectedIngredientId === ingredient.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {ingredient.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          ))}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {customItemName && !selectedIngredient && (
+                    <p className="text-xs text-muted-foreground">
+                      Custom item: &quot;{customItemName}&quot;
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="reported_by">Your name (optional)</Label>

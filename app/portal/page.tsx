@@ -1,4 +1,4 @@
-import { getPublicActivitiesForNextDays, getMealsWithPrepDateInRange, getUnresolvedShortageReports } from '@/lib/db/queries'
+import { getPublicActivitiesForNextDays, getMealsWithPrepDateInRange, getUnresolvedShortageReports, getIngredients } from '@/lib/db/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UtensilsCrossed, CalendarCheck, Sun, Leaf, Users, BookOpen } from 'lucide-react'
 import Link from 'next/link'
@@ -41,10 +41,11 @@ export default async function PortalPage() {
   endDateObj.setDate(today.getDate() + 2) // Next 3 days (today + 2)
   const endDate = formatDateYMD(endDateObj)
   
-  const [activities, meals, shortageReports] = await Promise.all([
+  const [activities, meals, shortageReports, ingredients] = await Promise.all([
     getPublicActivitiesForNextDays(3),
     getMealsWithPrepDateInRange(startDate, endDate, 0), // 0 offset since we want served dates, not prep dates
     getUnresolvedShortageReports(),
+    getIngredients(),
   ])
 
   // Group meals by date
@@ -232,7 +233,7 @@ export default async function PortalPage() {
       </div>
 
       {/* Shortage Report Section */}
-      <ShortageReportSection reports={shortageReports} />
+      <ShortageReportSection reports={shortageReports} ingredients={ingredients} />
 
       {/* Daily Reminder */}
       <Card className="border-primary/20 bg-primary/5">
