@@ -7,14 +7,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ShoppingCart, Package, ClipboardList, Copy, Check, Info, Search, Filter } from 'lucide-react'
+import { Loader2, ShoppingCart, Package, ClipboardList, Copy, Check, Info, Search, Filter, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { WeeklyMealPlan, Ingredient, ShoppingListResult, IngredientType } from '@/lib/types'
+import type { WeeklyMealPlan, Ingredient, ShoppingListResult, IngredientType, IngredientShortageReport } from '@/lib/types'
 import { generateShoppingListAction, bulkUpdateIngredientStockAction, fetchIngredientsForRangeAction } from './actions'
+import { resolveShortageAction, resolveAllShortagesAction } from '@/app/portal/actions'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 interface ShoppingListPageClientProps {
   weeklyMealPlans: WeeklyMealPlan[]
   ingredients: Ingredient[]
+  shortageReports: IngredientShortageReport[]
 }
 
 const dayOfWeekOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
@@ -83,7 +96,7 @@ const typeColors: Record<IngredientType, string> = {
   other: 'bg-slate-100 text-slate-800'
 }
 
-export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: ShoppingListPageClientProps) {
+export function ShoppingListPageClient({ weeklyMealPlans, ingredients, shortageReports }: ShoppingListPageClientProps) {
   const [isPending, startTransition] = useTransition()
   
   // Selection state
@@ -313,6 +326,80 @@ export function ShoppingListPageClient({ weeklyMealPlans, ingredients }: Shoppin
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </div>
+      )}
+
+      {/* Reported Shortages */}
+      {shortageReports.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                Community Reported Shortages ({shortageReports.length})
+              </CardTitle>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-green-600 border-green-300 hover:bg-green-50"
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    Groceries Arrived
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear All Shortage Reports?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will mark all {shortageReports.length} reported item(s) as resolved. 
+                      Use this when the groceries have arrived.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={() => resolveAllShortagesAction()}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Clear All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            <CardDescription>
+              Items reported as running low by community members. Review these when creating your shopping list.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {shortageReports.map((report) => (
+                <Badge 
+                  key={report.id} 
+                  variant="outline" 
+                  className="bg-amber-100 border-amber-300 text-amber-800 px-3 py-1.5 text-sm flex items-center gap-2"
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  {report.item_name}
+                  {report.notes && (
+                    <span className="text-amber-600 text-xs">({report.notes})</span>
+                  )}
+                  {report.reported_by && (
+                    <span className="text-amber-500 text-xs">- {report.reported_by}</span>
+                  )}
+                  <button
+                    onClick={() => resolveShortageAction(report.id)}
+                    className="ml-1 hover:text-green-600 transition-colors"
+                    title="Mark as resolved"
+                  >
+                    <Check className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* 1. Date Range Selection */}
