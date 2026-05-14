@@ -452,3 +452,13 @@ export interface ResidentPriceModifier {
   created_at: string
   updated_at: string
 }
+
+export interface IngredientShortageReport {
+  id: string
+  item_name: string
+  reported_by: string | null
+  notes: string | null
+  is_resolved: boolean
+  resolved_at: string | null
+  created_at: string
+}

@@ -2235,3 +2235,63 @@ export async function getActiveGuidelines(): Promise<import('@/lib/types').Guide
   if (error) throw error
   return data || []
 }
+
+// Ingredient Shortage Reports
+export async function getUnresolvedShortageReports(): Promise<import('@/lib/types').IngredientShortageReport[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('ingredient_shortage_reports')
+    .select('*')
+    .eq('is_resolved', false)
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function getAllShortageReports(): Promise<import('@/lib/types').IngredientShortageReport[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('ingredient_shortage_reports')
+    .select('*')
+    .order('created_at', { ascending: false })
+  
+  if (error) throw error
+  return data || []
+}
+
+export async function createShortageReport(data: {
+  item_name: string
+  reported_by?: string | null
+  notes?: string | null
+}): Promise<import('@/lib/types').IngredientShortageReport> {
+  const supabase = await createClient()
+  const { data: report, error } = await supabase
+    .from('ingredient_shortage_reports')
+    .insert(data)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return report
+}
+
+export async function resolveShortageReport(id: string): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('ingredient_shortage_reports')
+    .update({ is_resolved: true, resolved_at: new Date().toISOString() })
+    .eq('id', id)
+  
+  if (error) throw error
+}
+
+export async function resolveAllShortageReports(): Promise<void> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('ingredient_shortage_reports')
+    .update({ is_resolved: true, resolved_at: new Date().toISOString() })
+    .eq('is_resolved', false)
+  
+  if (error) throw error
+}
