@@ -10,6 +10,7 @@ const PUBLIC_ROUTES = [
   '/portal',
   '/auth/callback',
   '/setup',
+  '/developers',
 ]
 
 // Check if path starts with any public route
